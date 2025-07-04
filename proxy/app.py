@@ -35,6 +35,26 @@ def get_manga_details(manga_id):
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to fetch manga details: {str(e)}'}), 500
 
+@app.route('/api/manga/<source>/<manga_id>', methods=['GET'])
+def get_manga_details_with_source(source, manga_id):
+    """Get detailed information about a specific manga from a specific source"""
+    try:
+        # Forward request to Playwright service
+        response = requests.get(f"{PLAYWRIGHT_URL}/manga/{source}/{manga_id}")
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to fetch manga details: {str(e)}'}), 500
+
+@app.route('/api/chapter-images/<source>/<manga_id>/<path:chapter_id>', methods=['GET'])
+def get_chapter_images(source, manga_id, chapter_id):
+    try:
+        response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{manga_id}/{chapter_id}")
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to fetch chapter images: {str(e)}'}), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""

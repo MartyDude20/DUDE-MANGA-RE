@@ -69,4 +69,15 @@ def get_details(page: Page, manga_id: str):
     details['id'] = manga_id
     details['url'] = manga_url
     details['source'] = 'weebcentral'
+    chapters = []
+    for a in page.query_selector_all('a[href*="/chapter/"]'):
+        try:
+            chapter_title = a.inner_text().strip()
+            chapter_url = a.get_attribute('href')
+            if chapter_title and chapter_url:
+                chapters.append({'title': chapter_title, 'url': chapter_url})
+        except Exception as e:
+            print(f"WeebCentral chapter error: {e}")
+            continue
+    details['chapters'] = chapters
     return details 
