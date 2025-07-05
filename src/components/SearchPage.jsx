@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import MangaCard from './MangaCard';
+import MangaCard from './MangaCard.jsx';
 
 const SOURCE_OPTIONS = [
   { label: 'WeebCentral', value: 'weebcentral' },

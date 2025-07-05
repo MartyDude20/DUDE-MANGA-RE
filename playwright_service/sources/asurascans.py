@@ -123,9 +123,9 @@ def get_chapter_images(page: Page, manga_id: str, chapter_id: str):
     print('--- PAGE HTML END ---')
     # Wait for at least one image to appear
     page.wait_for_selector('img')
-    # Use JS to get all relevant image srcs
+    # Use JS to get all relevant image srcs from divs with class "w-full mx-auto center"
     images = page.eval_on_selector_all(
-        'img',
+        'div.w-full.mx-auto.center img',
         """(nodes) => nodes
             .filter(img => img.src && !img.src.endsWith('/images/EndDesign.webp'))
             .map(img => img.src)

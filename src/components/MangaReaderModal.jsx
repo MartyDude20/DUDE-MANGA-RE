@@ -7,11 +7,56 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
   const [showControls, setShowControls] = useState(true);
   const [viewMode, setViewMode] = useState('vertical');
   const [currentPage, setCurrentPage] = useState(0);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [imagesError, setImagesError] = useState(false);
+  const [loadedImages, setLoadedImages] = useState([]);
 
   useEffect(() => {
     if (!open) return;
     setCurrentPage(0);
     setViewMode('vertical');
+    setImagesLoaded(false);
+    setImagesError(false);
+    setLoadedImages([]);
+  }, [open, images]);
+
+  // Image loading with timeout
+  useEffect(() => {
+    if (!open || !images || images.length === 0) return;
+
+    const timeout = setTimeout(() => {
+      setImagesError(true);
+      setImagesLoaded(true);
+    }, 60000); // 60 seconds timeout
+
+    let loadedCount = 0;
+    const imagePromises = images.map((src, index) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          loadedCount++;
+          setLoadedImages(prev => [...prev, src]);
+          if (loadedCount === images.length) {
+            clearTimeout(timeout);
+            setImagesLoaded(true);
+          }
+          resolve(src);
+        };
+        img.onerror = () => {
+          loadedCount++;
+          if (loadedCount === images.length) {
+            clearTimeout(timeout);
+            setImagesLoaded(true);
+          }
+          reject(src);
+        };
+        img.src = src;
+      });
+    });
+
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [open, images]);
 
   // Progress calculation
@@ -81,67 +126,70 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
 
   // Render images for current mode
   let content = null;
-  if (viewMode === 'vertical') {
+  
+  if (!imagesLoaded) {
+    // Loading state
+    content = (
+      <div className="manga-reader-loading-container">
+        <div className="manga-reader-loading-circle"></div>
+        <p>Loading manga pages...</p>
+      </div>
+    );
+  } else if (imagesError || !images || images.length === 0) {
+    // Error or no images state
+    content = (
+      <div className="manga-reader-no-pages">
+        <p>No manga found</p>
+        <p>Images failed to load or no pages available</p>
+      </div>
+    );
+  } else if (viewMode === 'vertical') {
     content = (
       <div className="manga-reader-images manga-reader-vertical-images">
-        {images && images.length > 0 ? (
-          images.map((src, idx) => (
-            <div key={src + idx} className="manga-reader-image-wrapper">
-              <img
-                src={src}
-                alt={`Page ${idx + 1}`}
-                className="manga-reader-image"
-                loading="lazy"
-              />
-            </div>
-          ))
-        ) : (
-          <div className="manga-reader-no-pages">No pages found.</div>
-        )}
+        {loadedImages.map((src, idx) => (
+          <div key={src + idx} className="manga-reader-image-wrapper">
+            <img
+              src={src}
+              alt={`chapter page ${idx + 1}`}
+              className="manga-reader-image"
+              loading="lazy"
+            />
+          </div>
+        ))}
       </div>
     );
   } else if (viewMode === 'single') {
     content = (
       <div className="manga-reader-images manga-reader-single-image">
-        {images && images.length > 0 ? (
-          <div className="manga-reader-image-wrapper">
-            <img
-              src={images[currentPage]}
-              alt={`Page ${currentPage + 1}`}
-              className="manga-reader-image"
-              loading="lazy"
-            />
-          </div>
-        ) : (
-          <div className="manga-reader-no-pages">No pages found.</div>
-        )}
+        <div className="manga-reader-image-wrapper">
+          <img
+            src={loadedImages[currentPage]}
+            alt={`chapter page ${currentPage + 1}`}
+            className="manga-reader-image"
+            loading="lazy"
+          />
+        </div>
       </div>
     );
   } else if (viewMode === 'double') {
     content = (
       <div className="manga-reader-images manga-reader-double-images">
-        {images && images.length > 0 ? (
-          <>
-            <div className="manga-reader-image-wrapper">
-              <img
-                src={images[currentPage]}
-                alt={`Page ${currentPage + 1}`}
-                className="manga-reader-image"
-                loading="lazy"
-              />
-              {currentPage + 1 < totalPages && (
-                <img
-                  src={images[currentPage + 1]}
-                  alt={`Page ${currentPage + 2}`}
-                  className="manga-reader-image"
-                  loading="lazy"
-                />
-              )}
-            </div>
-          </>
-        ) : (
-          <div className="manga-reader-no-pages">No pages found.</div>
-        )}
+        <div className="manga-reader-image-wrapper">
+          <img
+            src={loadedImages[currentPage]}
+            alt={`chapter page ${currentPage + 1}`}
+            className="manga-reader-image"
+            loading="lazy"
+          />
+          {currentPage + 1 < loadedImages.length && (
+            <img
+              src={loadedImages[currentPage + 1]}
+              alt={`chapter page ${currentPage + 2}`}
+              className="manga-reader-image"
+              loading="lazy"
+            />
+          )}
+        </div>
       </div>
     );
   }

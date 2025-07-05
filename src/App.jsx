@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
-import Header from './components/Header';
-import SearchPage from './components/SearchPage';
-import MangaDetails from './components/MangaDetails';
+import Header from './components/Header.jsx';
+import SearchPage from './components/SearchPage.jsx';
+import MangaDetails from './components/MangaDetails.jsx';
 
 function App() {
   return (

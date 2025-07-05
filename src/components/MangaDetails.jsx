@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import MangaReaderModal from './MangaReaderModal';
+import MangaReaderModal from './MangaReaderModal.jsx';
 
 const MangaDetails = () => {
   const { id, source } = useParams();
