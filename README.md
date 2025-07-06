@@ -175,3 +175,8 @@ This project is for educational purposes. Please respect WeebCentral's terms of 
 ## Support
 
 For issues and questions, please open an issue on the repository. 
+
+
+## HOW TO ENTER PYTHON ENV
+
+venv\Scripts\Activate.ps1 
