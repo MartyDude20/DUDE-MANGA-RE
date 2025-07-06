@@ -8,9 +8,9 @@ import MangaDetails from './components/MangaDetails.jsx';
 function App() {
   return (
     <Router>
-      <div className="App">
+      <div className="min-h-screen bg-gray-900">
         <Header />
-        <main className="main-content">
+        <main className="flex-1">
           <Routes>
             <Route path="/" element={<SearchPage />} />
             <Route path="/manga/:source/:id" element={<MangaDetails />} />

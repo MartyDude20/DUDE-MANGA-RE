@@ -12,41 +12,28 @@ const MangaCard = ({ manga }) => {
   };
 
   return (
-    <Link to={`/manga/${manga.source}/${manga.id}`} className="manga-card">
-      <div style={{ position: 'relative' }}>
+    <Link to={`/manga/${manga.source}/${manga.id}`} className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 overflow-hidden hover:shadow-md hover:border-gray-600 transition-all cursor-pointer">
+      <div className="relative">
         <img
           src={manga.image}
           alt={manga.title}
-          className="manga-image"
+          className="w-full h-48 object-cover"
           onError={handleImageError}
         />
-        <span
-          style={{
-            position: 'absolute',
-            top: 8,
-            left: 8,
-            background: 'var(--accent-color)',
-            color: 'white',
-            padding: '2px 8px',
-            borderRadius: '6px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            zIndex: 2,
-          }}
-        >
+        <span className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
           {sourceLabels[manga.source] || manga.source}
         </span>
       </div>
-      <div className="manga-info">
-        <h3 className="manga-title">{manga.title}</h3>
+      <div className="p-4">
+        <h3 className="font-medium text-white mb-2 line-clamp-2">{manga.title}</h3>
         {manga.status && (
-          <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-            <strong>Status:</strong> {manga.status}
+          <div className="text-sm text-gray-300 mb-1">
+            <span className="font-medium">Status:</span> {manga.status}
           </div>
         )}
         {manga.chapter && (
-          <div className="manga-chapter">
-            <strong>Chapter:</strong> {manga.chapter}
+          <div className="text-sm text-gray-400">
+            <span className="font-medium">Chapter:</span> {manga.chapter}
           </div>
         )}
       </div>

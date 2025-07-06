@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import './MangaReaderModal.css';
 
 const MODES = ['single', 'double', 'vertical'];
 
@@ -130,28 +129,32 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
   if (!imagesLoaded) {
     // Loading state
     content = (
-      <div className="manga-reader-loading-container">
-        <div className="manga-reader-loading-circle"></div>
-        <p>Loading manga pages...</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4">Loading manga pages...</p>
+        </div>
       </div>
     );
   } else if (imagesError || !images || images.length === 0) {
     // Error or no images state
     content = (
-      <div className="manga-reader-no-pages">
-        <p>No manga found</p>
-        <p>Images failed to load or no pages available</p>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center text-white">
+          <p className="text-xl mb-2">No manga found</p>
+          <p className="text-gray-400">Images failed to load or no pages available</p>
+        </div>
       </div>
     );
   } else if (viewMode === 'vertical') {
     content = (
-      <div className="manga-reader-images manga-reader-vertical-images">
+      <div className="pt-16 pb-8">
         {loadedImages.map((src, idx) => (
-          <div key={src + idx} className="manga-reader-image-wrapper">
+          <div key={src + idx} className="mb-4">
             <img
               src={src}
               alt={`chapter page ${idx + 1}`}
-              className="manga-reader-image"
+              className="max-w-full mx-auto"
               loading="lazy"
             />
           </div>
@@ -160,70 +163,79 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
     );
   } else if (viewMode === 'single') {
     content = (
-      <div className="manga-reader-images manga-reader-single-image">
-        <div className="manga-reader-image-wrapper">
-          <img
-            src={loadedImages[currentPage]}
-            alt={`chapter page ${currentPage + 1}`}
-            className="manga-reader-image"
-            loading="lazy"
-          />
-        </div>
+      <div className="pt-16 pb-8 flex justify-center">
+        <img
+          src={loadedImages[currentPage]}
+          alt={`chapter page ${currentPage + 1}`}
+          className="max-w-full"
+          loading="lazy"
+        />
       </div>
     );
   } else if (viewMode === 'double') {
     content = (
-      <div className="manga-reader-images manga-reader-double-images">
-        <div className="manga-reader-image-wrapper">
+      <div className="pt-16 pb-8 flex justify-center gap-4">
+        <img
+          src={loadedImages[currentPage]}
+          alt={`chapter page ${currentPage + 1}`}
+          className="max-w-[50%]"
+          loading="lazy"
+        />
+        {currentPage + 1 < loadedImages.length && (
           <img
-            src={loadedImages[currentPage]}
-            alt={`chapter page ${currentPage + 1}`}
-            className="manga-reader-image"
+            src={loadedImages[currentPage + 1]}
+            alt={`chapter page ${currentPage + 2}`}
+            className="max-w-[50%]"
             loading="lazy"
           />
-          {currentPage + 1 < loadedImages.length && (
-            <img
-              src={loadedImages[currentPage + 1]}
-              alt={`chapter page ${currentPage + 2}`}
-              className="manga-reader-image"
-              loading="lazy"
-            />
-          )}
-        </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="manga-reader-modal-overlay">
-      <div className={`manga-reader-modal-content manga-reader-${viewMode}`}>
-        {showControls && (
-          <div className="manga-reader-header">
-            <button className="manga-reader-close" onClick={onClose}>&times;</button>
-            <h2 className="manga-reader-title">{chapterTitle}</h2>
-            {/* Progress bar */}
-            <div className="manga-reader-progress-bar">
-              <div
-                className="manga-reader-progress"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="manga-reader-controls">
-              <span className="manga-reader-mode">{viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} Mode</span>
-              <span className="manga-reader-page-info">
+    <div className="fixed inset-0 bg-black z-50 overflow-auto">
+      {showControls && (
+        <div className="fixed top-0 left-0 right-0 bg-black bg-opacity-75 text-white p-4 z-10">
+          <div className="flex items-center justify-between mb-4">
+            <button 
+              className="text-2xl hover:text-gray-300 transition-colors"
+              onClick={onClose}
+            >
+              &times;
+            </button>
+            <h2 className="text-lg font-semibold">{chapterTitle}</h2>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-300">
+                {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} Mode
+              </span>
+              <span className="text-sm text-gray-300">
                 {viewMode === 'double'
                   ? `${currentPage + 1}-${Math.min(currentPage + 2, totalPages)} / ${totalPages}`
                   : `${currentPage + 1} / ${totalPages}`}
               </span>
+            </div>
+          </div>
+          
+          {/* Progress bar */}
+          <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+            <div
+              className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-2">
               <button
-                className="manga-reader-toggle-controls"
+                className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
                 onClick={() => setShowControls((prev) => !prev)}
                 title="Toggle Controls (H)"
               >
                 Hide Controls
               </button>
               <button
-                className="manga-reader-toggle-mode"
+                className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
                 onClick={() => setViewMode((prev) => {
                   const idx = MODES.indexOf(prev);
                   return MODES[(idx + 1) % MODES.length];
@@ -233,9 +245,10 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
                 Change Mode
               </button>
             </div>
-            <div className="manga-reader-nav-buttons">
+            
+            <div className="flex space-x-2">
               <button
-                className="manga-reader-nav-btn"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={prevPage}
                 disabled={currentPage === 0}
                 title="Previous Page (←)"
@@ -243,7 +256,7 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
                 &#8592;
               </button>
               <button
-                className="manga-reader-nav-btn"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={nextPage}
                 disabled={currentPage >= totalPages - (viewMode === 'double' ? 2 : 1)}
                 title="Next Page (→ or Space)"
@@ -252,9 +265,9 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
               </button>
             </div>
           </div>
-        )}
-        {content}
-      </div>
+        </div>
+      )}
+      {content}
     </div>
   );
 };
