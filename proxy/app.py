@@ -49,7 +49,12 @@ def get_manga_details_with_source(source, manga_id):
 @app.route('/api/chapter-images/<source>/<manga_id>/<path:chapter_id>', methods=['GET'])
 def get_chapter_images(source, manga_id, chapter_id):
     try:
-        response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{manga_id}/{chapter_id}")
+        if source == 'weebcentral':
+            # For WeebCentral, the chapter_id is actually the full chapter URL
+            response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{chapter_id}")
+        else:
+            # For other sources like AsuraScans, use the original format
+            response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{manga_id}/{chapter_id}")
         response.raise_for_status()
         return jsonify(response.json())
     except requests.RequestException as e:

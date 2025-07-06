@@ -6,12 +6,14 @@ import os
 from dotenv import load_dotenv
 from sources import weebcentral, asurascans
 from sources.asurascans import chapter_bp
+from sources.weebcentral import weebcentral_chapter_bp
 
 load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
 app.register_blueprint(chapter_bp)
+app.register_blueprint(weebcentral_chapter_bp)
 
 # Config: enable/disable sources
 ENABLED_SOURCES = {
