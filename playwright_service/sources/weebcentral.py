@@ -45,11 +45,13 @@ def search(page: Page, query: str):
                 if img_elem:
                     alt_text = img_elem.get_attribute('alt')
                     if alt_text:
-                        title = alt_text  # Keep the full alt text including "cover"
+                        # Remove "cover" from the alt text to get clean title
+                        title = alt_text.replace(' cover', '').replace(' Cover', '').strip()
             elif img_elem:
                 alt_text = img_elem.get_attribute('alt')
                 if alt_text:
-                    title = alt_text  # Keep the full alt text including "cover"
+                    # Remove "cover" from the alt text to get clean title
+                    title = alt_text.replace(' cover', '').replace(' Cover', '').strip()
             
             # Fallback to text element if no alt text
             if not title:
