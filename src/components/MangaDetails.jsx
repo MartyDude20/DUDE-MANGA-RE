@@ -12,6 +12,7 @@ const MangaDetails = () => {
   const [readerImages, setReaderImages] = useState([]);
   const [readerLoading, setReaderLoading] = useState(false);
   const [readerTitle, setReaderTitle] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
 
   useEffect(() => {
     const fetchMangaDetails = async () => {
@@ -20,6 +21,13 @@ const MangaDetails = () => {
         setError('');
         const response = await axios.get(`/api/manga/${source}/${id}`);
         setManga(response.data);
+        
+        // Check if manga is saved
+        const savedManga = JSON.parse(localStorage.getItem('savedManga') || '[]');
+        const isMangaSaved = savedManga.some(saved => 
+          saved.id === id && saved.source === source
+        );
+        setIsSaved(isMangaSaved);
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to fetch manga details');
       } finally {
@@ -34,6 +42,33 @@ const MangaDetails = () => {
 
   const handleImageError = (e) => {
     e.target.style.display = 'none';
+  };
+
+  const handleSaveToggle = () => {
+    const savedManga = JSON.parse(localStorage.getItem('savedManga') || '[]');
+    
+    if (isSaved) {
+      // Remove from saved list
+      const updatedList = savedManga.filter(saved => 
+        !(saved.id === id && saved.source === source)
+      );
+      localStorage.setItem('savedManga', JSON.stringify(updatedList));
+      setIsSaved(false);
+    } else {
+      // Add to saved list
+      const mangaToSave = {
+        id: id,
+        title: manga.title,
+        image: manga.image,
+        source: source,
+        status: manga.status,
+        author: manga.author,
+        savedAt: new Date().toISOString()
+      };
+      savedManga.push(mangaToSave);
+      localStorage.setItem('savedManga', JSON.stringify(savedManga));
+      setIsSaved(true);
+    }
   };
 
   const handleChapterClick = async (e, chapter) => {
@@ -91,9 +126,36 @@ const MangaDetails = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-6">
-      <Link to="/" className="mb-6 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block">
-        ← Back to Search
-      </Link>
+      <div className="flex items-center justify-between mb-6">
+        <Link to="/" className="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block">
+          ← Back to Search
+        </Link>
+        
+        <button
+          onClick={handleSaveToggle}
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+            isSaved 
+              ? 'bg-red-600 hover:bg-red-700 text-white' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+        >
+          {isSaved ? (
+            <>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+              </svg>
+              <span>Saved</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+              <span>Save Manga</span>
+            </>
+          )}
+        </button>
+      </div>
       
       <div className="flex flex-col md:flex-row gap-6 mb-8 bg-gray-800 p-6 rounded-lg shadow-lg">
         <img

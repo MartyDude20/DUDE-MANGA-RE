@@ -13,6 +13,9 @@ const Header = () => {
             <Link to="/" className="text-gray-300 hover:text-white font-medium transition-colors">
               Search
             </Link>
+            <Link to="/saved" className="text-gray-300 hover:text-white font-medium transition-colors">
+              Saved
+            </Link>
             <Link to="/sources" className="text-gray-300 hover:text-white font-medium transition-colors">
               Sources
             </Link>
