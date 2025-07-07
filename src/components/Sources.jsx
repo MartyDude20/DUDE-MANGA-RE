@@ -19,6 +19,7 @@ const Sources = () => {
   const [sources, setSources] = useState(SOURCE_OPTIONS);
   const [saved, setSaved] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState('az'); // 'az' or 'za'
 
   // Load saved sources from localStorage on component mount
   useEffect(() => {
@@ -46,10 +47,20 @@ const Sources = () => {
   };
 
   // Filter sources based on search query
-  const filteredSources = sources.filter(source => 
-    source.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    source.description.toLowerCase().includes(searchQuery.toLowerCase())
+  let filteredSources = sources.filter(source => 
+    (source.name && source.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (source.description && source.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // Sort sources by name
+  filteredSources = filteredSources.sort((a, b) => {
+    if (!a.name || !b.name) return 0;
+    if (sortOrder === 'az') {
+      return a.name.localeCompare(b.name);
+    } else {
+      return b.name.localeCompare(a.name);
+    }
+  });
 
   const enabledCount = sources.filter(source => source.enabled).length;
   const filteredEnabledCount = filteredSources.filter(source => source.enabled).length;
@@ -65,7 +76,7 @@ const Sources = () => {
         
         {/* Search Bar */}
         <div className="mb-6">
-          <div className="relative">
+          <div className="relative mb-2">
             <input
               type="text"
               value={searchQuery}
@@ -81,6 +92,22 @@ const Sources = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
+          </div>
+          <div className="flex items-center gap-2 mb-2">
+            <button
+              type="button"
+              className={`px-3 py-1 rounded text-sm font-medium border focus:outline-none transition-colors ${sortOrder === 'az' ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'}`}
+              onClick={() => setSortOrder('az')}
+            >
+              Sort A-Z
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 rounded text-sm font-medium border focus:outline-none transition-colors ${sortOrder === 'za' ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'}`}
+              onClick={() => setSortOrder('za')}
+            >
+              Sort Z-A
+            </button>
           </div>
           {searchQuery && (
             <p className="text-sm text-gray-400 mt-2">
