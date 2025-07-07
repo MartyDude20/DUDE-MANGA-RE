@@ -6,6 +6,7 @@ import MangaCard from './MangaCard.jsx';
 const DEFAULT_SOURCES = [
   { id: 'weebcentral', name: 'WeebCentral', enabled: true },
   { id: 'asurascans', name: 'Asura Scans', enabled: true },
+  { id: 'mangadex', name: 'MangaDex', enabled: true },
 ];
 
 const SearchPage = () => {
@@ -18,11 +19,22 @@ const SearchPage = () => {
   const [forceRefresh, setForceRefresh] = useState(false);
   const [cacheInfo, setCacheInfo] = useState(null);
 
-  // Load saved sources from localStorage on component mount
+  // Load and merge saved sources from localStorage on component mount
   useEffect(() => {
     const savedSources = localStorage.getItem('mangaSources');
     if (savedSources) {
-      setSources(JSON.parse(savedSources));
+      const saved = JSON.parse(savedSources);
+      // Merge: add any new sources from DEFAULT_SOURCES
+      const merged = DEFAULT_SOURCES.map(def => {
+        const found = saved.find(s => s.id === def.id);
+        return found ? { ...def, ...found } : def;
+      });
+      setSources(merged);
+      // Optionally, update localStorage with merged sources
+      localStorage.setItem('mangaSources', JSON.stringify(merged));
+    } else {
+      setSources(DEFAULT_SOURCES);
+      localStorage.setItem('mangaSources', JSON.stringify(DEFAULT_SOURCES));
     }
   }, []);
 

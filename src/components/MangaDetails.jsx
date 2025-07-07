@@ -84,8 +84,12 @@ const MangaDetails = () => {
     setReaderOpen(true);
     setReaderTitle(chapter.title);
     try {
-      // chapter.url is like 'bones-b58b6f2f/chapter/30', id is manga_id
-      const resp = await axios.get(`/api/chapter-images/${source}/${id}/${chapter.url}`);
+      let chapterId = chapter.url;
+      if (source === 'mangadex') {
+        // Extract UUID from the end of the URL
+        chapterId = chapter.url.split('/').pop();
+      }
+      const resp = await axios.get(`/api/chapter-images/${source}/${id}/${chapterId}`);
       setReaderImages(resp.data.images || []);
     } catch (err) {
       setReaderImages([]);

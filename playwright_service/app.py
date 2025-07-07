@@ -5,6 +5,7 @@ import re
 import os
 from dotenv import load_dotenv
 from sources import weebcentral, asurascans
+from sources import mangadex
 from sources.asurascans import chapter_bp
 from sources.weebcentral import weebcentral_chapter_bp
 from cache_manager import CacheManager
@@ -44,6 +45,7 @@ init_auth(app)
 
 app.register_blueprint(chapter_bp)
 app.register_blueprint(weebcentral_chapter_bp)
+app.register_blueprint(mangadex.mangadex_chapter_bp)
 
 # Initialize cache manager
 cache_manager = CacheManager()
@@ -51,12 +53,14 @@ cache_manager = CacheManager()
 # Config: enable/disable sources
 ENABLED_SOURCES = {
     'weebcentral': True,
-    'asurascans': True
+    'asurascans': True,
+    'mangadex': True
 }
 
 SOURCE_MODULES = {
     'weebcentral': weebcentral,
-    'asurascans': asurascans
+    'asurascans': asurascans,
+    'mangadex': mangadex
 }
 
 def is_admin(user):
