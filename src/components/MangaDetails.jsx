@@ -263,6 +263,25 @@ const MangaDetails = () => {
         images={readerImages}
         onClose={() => setReaderOpen(false)}
         chapterTitle={readerTitle}
+        chapters={manga.chapters}
+        currentChapterIndex={manga.chapters ? manga.chapters.findIndex(ch => ch.title === readerTitle) : -1}
+        onRequestChapter={async (chapter, idx) => {
+          setReaderLoading(true);
+          setReaderOpen(true);
+          setReaderTitle(chapter.title);
+          try {
+            let chapterId = chapter.url;
+            if (source === 'mangadex') {
+              chapterId = chapter.url.split('/').pop();
+            }
+            const resp = await axios.get(`/api/chapter-images/${source}/${id}/${chapterId}`);
+            setReaderImages(resp.data.images || []);
+          } catch (err) {
+            setReaderImages([]);
+          } finally {
+            setReaderLoading(false);
+          }
+        }}
       />
       
       {readerOpen && readerLoading && (

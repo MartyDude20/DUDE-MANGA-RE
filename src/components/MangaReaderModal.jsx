@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 
 const MODES = ['single', 'double', 'vertical'];
 
-const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
+const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], currentChapterIndex = -1, onRequestChapter }) => {
   const [showControls, setShowControls] = useState(true);
   const [viewMode, setViewMode] = useState('vertical');
   const [currentPage, setCurrentPage] = useState(0);
@@ -198,23 +198,29 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle }) => {
       {showControls && (
         <div className="fixed top-0 left-0 right-0 bg-black bg-opacity-75 text-white p-4 z-10">
           <div className="flex items-center justify-between mb-4">
-            <button 
-              className="text-2xl hover:text-gray-300 transition-colors"
-              onClick={onClose}
-            >
-              &times;
-            </button>
-            <h2 className="text-lg font-semibold">{chapterTitle}</h2>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-300">
-                {viewMode.charAt(0).toUpperCase() + viewMode.slice(1)} Mode
-              </span>
-              <span className="text-sm text-gray-300">
-                {viewMode === 'double'
-                  ? `${currentPage + 1}-${Math.min(currentPage + 2, totalPages)} / ${totalPages}`
-                  : `${currentPage + 1} / ${totalPages}`}
-              </span>
+            <button onClick={onClose} className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Close</button>
+            <div className="flex items-center gap-2">
+              {onRequestChapter && chapters.length > 0 && (
+                <>
+                  <button
+                    className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50"
+                    onClick={() => onRequestChapter(chapters[currentChapterIndex - 1], currentChapterIndex - 1)}
+                    disabled={currentChapterIndex <= 0}
+                  >
+                    ← Previous Chapter
+                  </button>
+                  <span className="mx-2 text-gray-300">{chapterTitle}</span>
+                  <button
+                    className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50"
+                    onClick={() => onRequestChapter(chapters[currentChapterIndex + 1], currentChapterIndex + 1)}
+                    disabled={currentChapterIndex === -1 || currentChapterIndex >= chapters.length - 1}
+                  >
+                    Next Chapter →
+                  </button>
+                </>
+              )}
             </div>
+            <button onClick={() => setShowControls((prev) => !prev)} className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Hide UI (H)</button>
           </div>
           
           {/* Progress bar */}

@@ -18,6 +18,7 @@ const SearchPage = () => {
   const [sources, setSources] = useState(DEFAULT_SOURCES);
   const [forceRefresh, setForceRefresh] = useState(false);
   const [cacheInfo, setCacheInfo] = useState(null);
+  const [openAccordions, setOpenAccordions] = useState({});
 
   // Load and merge saved sources from localStorage on component mount
   useEffect(() => {
@@ -72,6 +73,16 @@ const SearchPage = () => {
   };
 
   const enabledCount = sources.filter(source => source.enabled).length;
+
+  const groupedResults = results.reduce((acc, manga) => {
+    acc[manga.source] = acc[manga.source] || [];
+    acc[manga.source].push(manga);
+    return acc;
+  }, {});
+
+  const handleAccordionToggle = (sourceId) => {
+    setOpenAccordions((prev) => ({ ...prev, [sourceId]: !prev[sourceId] }));
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6">
@@ -187,10 +198,37 @@ const SearchPage = () => {
       )}
 
       {!loading && results.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {results.map((manga) => (
-            <MangaCard key={manga.id + manga.source} manga={manga} />
-          ))}
+        <div className="space-y-4">
+          {Object.keys(groupedResults).map((sourceId) => {
+            const source = sources.find(s => s.id === sourceId) || { name: sourceId };
+            const isOpen = openAccordions[sourceId] ?? true;
+            return (
+              <div key={sourceId} className="border border-gray-700 rounded-lg bg-gray-800">
+                <button
+                  className="w-full flex justify-between items-center px-6 py-4 text-left focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onClick={() => handleAccordionToggle(sourceId)}
+                >
+                  <span className="text-lg font-semibold text-white">{source.name}</span>
+                  <svg
+                    className={`w-5 h-5 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {isOpen && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6 pb-6">
+                    {groupedResults[sourceId].map((manga) => (
+                      <MangaCard key={manga.id + manga.source} manga={manga} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
