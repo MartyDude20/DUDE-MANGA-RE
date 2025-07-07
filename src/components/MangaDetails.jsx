@@ -13,14 +13,21 @@ const MangaDetails = () => {
   const [readerLoading, setReaderLoading] = useState(false);
   const [readerTitle, setReaderTitle] = useState('');
   const [isSaved, setIsSaved] = useState(false);
+  const [forceRefresh, setForceRefresh] = useState(false);
+  const [cacheInfo, setCacheInfo] = useState(null);
 
   useEffect(() => {
     const fetchMangaDetails = async () => {
       try {
         setLoading(true);
         setError('');
-        const response = await axios.get(`/api/manga/${source}/${id}`);
+        const params = {};
+        if (forceRefresh) {
+          params.refresh = 'true';
+        }
+        const response = await axios.get(`/api/manga/${source}/${id}`, { params });
         setManga(response.data);
+        setCacheInfo(response.data.cached);
         
         // Check if manga is saved
         const savedManga = JSON.parse(localStorage.getItem('savedManga') || '[]');
@@ -38,7 +45,7 @@ const MangaDetails = () => {
     if (id && source) {
       fetchMangaDetails();
     }
-  }, [id, source]);
+  }, [id, source, forceRefresh]);
 
   const handleImageError = (e) => {
     e.target.style.display = 'none';
@@ -131,32 +138,68 @@ const MangaDetails = () => {
           ← Back to Search
         </Link>
         
-        <button
-          onClick={handleSaveToggle}
-          className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
-            isSaved 
-              ? 'bg-red-600 hover:bg-red-700 text-white' 
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          {isSaved ? (
-            <>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-              </svg>
-              <span>Saved</span>
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-              </svg>
-              <span>Save Manga</span>
-            </>
-          )}
-        </button>
+        <div className="flex items-center space-x-4">
+          {/* Cache Refresh Toggle */}
+          <label className="flex items-center space-x-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={forceRefresh}
+              onChange={(e) => setForceRefresh(e.target.checked)}
+              className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+            />
+            <span className="text-gray-300 text-sm">Force refresh</span>
+          </label>
+          
+          <button
+            onClick={handleSaveToggle}
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+              isSaved 
+                ? 'bg-red-600 hover:bg-red-700 text-white' 
+                : 'bg-blue-600 hover:bg-blue-700 text-white'
+            }`}
+          >
+            {isSaved ? (
+              <>
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                </svg>
+                <span>Saved</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span>Save Manga</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
       
+      {cacheInfo !== null && (
+        <div className={`mb-6 p-4 rounded-lg border ${
+          cacheInfo 
+            ? 'bg-green-900 border-green-600 text-green-200' 
+            : 'bg-blue-900 border-blue-600 text-blue-200'
+        }`}>
+          <div className="flex items-center space-x-2">
+            {cacheInfo ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
+              </svg>
+            )}
+            <span>
+              {cacheInfo ? 'Manga details loaded from cache' : 'Fresh manga details loaded'}
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-6 mb-8 bg-gray-800 p-6 rounded-lg shadow-lg">
         <img
           src={manga.image}
@@ -198,8 +241,8 @@ const MangaDetails = () => {
               <div 
                 key={`${chapter.url}-${idx}`} 
                 className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors"
-                onClick={e => handleChapterClick(e, chapter)}
-              >
+                  onClick={e => handleChapterClick(e, chapter)}
+                >
                 <div>
                   <h3 className="font-medium text-white mb-1">{chapter.title}</h3>
                   <p className="text-sm text-gray-400">{chapter.number}</p>

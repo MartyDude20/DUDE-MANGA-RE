@@ -13,30 +13,6 @@ const SOURCE_OPTIONS = [
     description: 'High-quality manga translations and releases',
     enabled: true 
   },
-  { 
-    id: 'mangadex', 
-    name: 'MangaDex', 
-    description: 'Comprehensive manga database with community translations',
-    enabled: false 
-  },
-  { 
-    id: 'mangakakalot', 
-    name: 'MangaKakalot', 
-    description: 'Fast updates and extensive manga collection',
-    enabled: false 
-  },
-  { 
-    id: 'readonepiece', 
-    name: 'Read One Piece', 
-    description: 'Specialized source for One Piece manga and related content',
-    enabled: false 
-  },
-  { 
-    id: 'mangafreak', 
-    name: 'MangaFreak', 
-    description: 'Classic manga source with reliable updates',
-    enabled: false 
-  },
 ];
 
 const Sources = () => {

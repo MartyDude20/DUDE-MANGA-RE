@@ -180,3 +180,7 @@ For issues and questions, please open an issue on the repository.
 ## HOW TO ENTER PYTHON ENV
 
 venv\Scripts\Activate.ps1 
+
+dudemanga15!
+
+dudedude15!

@@ -11,14 +11,21 @@ CORS(app)
 
 PLAYWRIGHT_URL = f"http://localhost:{os.getenv('PLAYWRIGHT_PORT', 5000)}"
 
+def get_forward_headers():
+    headers = {}
+    if 'Authorization' in request.headers:
+        headers['Authorization'] = request.headers['Authorization']
+    if 'Cookie' in request.headers:
+        headers['Cookie'] = request.headers['Cookie']
+    return headers
+
 @app.route('/api/search', methods=['GET'])
 def search_manga():
     """Search for manga titles"""
     params = dict(request.args)
-    print('Proxy forwarding params:', params)
     try:
-        # Forward all query parameters to Playwright service
-        response = requests.get(f"{PLAYWRIGHT_URL}/search", params=params)
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/search", params=params, headers=headers)
         response.raise_for_status()
         return jsonify(response.json())
     except requests.RequestException as e:
@@ -28,8 +35,8 @@ def search_manga():
 def get_manga_details(manga_id):
     """Get detailed information about a specific manga"""
     try:
-        # Forward request to Playwright service
-        response = requests.get(f"{PLAYWRIGHT_URL}/manga/{manga_id}")
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/manga/{manga_id}", headers=headers)
         response.raise_for_status()
         return jsonify(response.json())
     except requests.RequestException as e:
@@ -39,8 +46,8 @@ def get_manga_details(manga_id):
 def get_manga_details_with_source(source, manga_id):
     """Get detailed information about a specific manga from a specific source"""
     try:
-        # Forward request to Playwright service
-        response = requests.get(f"{PLAYWRIGHT_URL}/manga/{source}/{manga_id}")
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/manga/{source}/{manga_id}", headers=headers)
         response.raise_for_status()
         return jsonify(response.json())
     except requests.RequestException as e:
@@ -49,16 +56,49 @@ def get_manga_details_with_source(source, manga_id):
 @app.route('/api/chapter-images/<source>/<manga_id>/<path:chapter_id>', methods=['GET'])
 def get_chapter_images(source, manga_id, chapter_id):
     try:
+        headers = get_forward_headers()
         if source == 'weebcentral':
-            # For WeebCentral, the chapter_id is actually the full chapter URL
-            response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{chapter_id}")
+            response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{chapter_id}", headers=headers)
         else:
-            # For other sources like AsuraScans, use the original format
-            response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{manga_id}/{chapter_id}")
+            response = requests.get(f"{PLAYWRIGHT_URL}/chapter-images/{source}/{manga_id}/{chapter_id}", headers=headers)
         response.raise_for_status()
         return jsonify(response.json())
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to fetch chapter images: {str(e)}'}), 500
+
+@app.route('/api/cache/stats', methods=['GET'])
+def get_cache_stats():
+    """Get cache statistics"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/cache/stats", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get cache stats: {str(e)}'}), 500
+
+@app.route('/api/cache/clear', methods=['POST'])
+def clear_cache():
+    """Clear cache based on parameters"""
+    try:
+        data = request.get_json() or {}
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/cache/clear", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to clear cache: {str(e)}'}), 500
+
+@app.route('/api/cache/cleanup', methods=['POST'])
+def cleanup_cache():
+    """Clean up expired cache entries"""
+    try:
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/cache/cleanup", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to cleanup cache: {str(e)}'}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
