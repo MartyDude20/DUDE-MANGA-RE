@@ -3,6 +3,34 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import MangaReaderModal from './MangaReaderModal.jsx';
 
+// Helper function to format date
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date)) return dateStr;
+  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+}
+
+// Helper to extract date from title
+function extractDateFromTitle(title) {
+  if (!title) return { cleanTitle: title, date: null };
+  // Match formats like ' - May 1, 2024', ' - 2024-05-01', ' Sep 7, 2024', or 'March 24th 2025' at the end
+  const datePattern = /(?:\s*[-:]?\s*|\s+)((?:\w+ \d{1,2}(?:st|nd|rd|th)?,? \d{4})|(?:\d{4}-\d{2}-\d{2}))$/i;
+  const match = title.match(datePattern);
+  if (match) {
+    const cleanTitle = title.replace(datePattern, '').trim();
+    return { cleanTitle, date: match[1] };
+  }
+  return { cleanTitle: title, date: null };
+}
+
+// Helper to normalize date string (remove ordinal suffixes)
+function normalizeDateString(dateStr) {
+  if (!dateStr) return dateStr;
+  // Remove st, nd, rd, th from day
+  return dateStr.replace(/(\d{1,2})(st|nd|rd|th)/gi, '$1');
+}
+
 const MangaDetails = () => {
   const { id, source } = useParams();
   const [manga, setManga] = useState(null);
@@ -15,6 +43,7 @@ const MangaDetails = () => {
   const [isSaved, setIsSaved] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(false);
   const [cacheInfo, setCacheInfo] = useState(null);
+  const [chapterSortOrder, setChapterSortOrder] = useState('newest'); // 'newest', 'oldest'
 
   useEffect(() => {
     const fetchMangaDetails = async () => {
@@ -240,20 +269,79 @@ const MangaDetails = () => {
       {manga.chapters && manga.chapters.length > 0 && (
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-white mb-4">Chapters</h2>
+          <div className="flex gap-2 mb-4">
+            <button
+              type="button"
+              className={`px-3 py-1 rounded text-sm font-medium border focus:outline-none transition-colors ${chapterSortOrder === 'newest' ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'}`}
+              onClick={() => setChapterSortOrder('newest')}
+            >
+              Newest Added
+            </button>
+            <button
+              type="button"
+              className={`px-3 py-1 rounded text-sm font-medium border focus:outline-none transition-colors ${chapterSortOrder === 'oldest' ? 'bg-blue-600 text-white border-blue-700' : 'bg-gray-700 text-gray-200 border-gray-600 hover:bg-gray-600'}`}
+              onClick={() => setChapterSortOrder('oldest')}
+            >
+              Oldest Added
+            </button>
+          </div>
           <div className="space-y-2">
-            {manga.chapters.map((chapter, idx) => (
-              <div 
-                key={`${chapter.url}-${idx}`} 
-                className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors"
-                  onClick={e => handleChapterClick(e, chapter)}
-                >
-                <div>
-                  <h3 className="font-medium text-white mb-1">{chapter.title}</h3>
-                  <p className="text-sm text-gray-400">{chapter.number}</p>
-                </div>
-                <span className="text-sm text-gray-500">{chapter.date}</span>
-              </div>
-            ))}
+            {(() => {
+              let sortedChapters = [...manga.chapters];
+              sortedChapters = sortedChapters.map(chapter => {
+                const { cleanTitle, date: extractedDate } = extractDateFromTitle(chapter.title);
+                return { ...chapter, cleanTitle, extractedDate };
+              });
+              // Always sort by the value shown in the date column
+              sortedChapters.sort((a, b) => {
+                let dateA = a.date || a.extractedDate;
+                let dateB = b.date || b.extractedDate;
+                dateA = normalizeDateString(dateA);
+                dateB = normalizeDateString(dateB);
+                const parsedA = dateA ? Date.parse(dateA) : NaN;
+                const parsedB = dateB ? Date.parse(dateB) : NaN;
+                if (!isNaN(parsedA) && !isNaN(parsedB)) {
+                  if (chapterSortOrder === 'newest') {
+                    return parsedB - parsedA;
+                  } else {
+                    return parsedA - parsedB;
+                  }
+                } else if (!isNaN(parsedA)) {
+                  // a has a date, b does not
+                  return -1;
+                } else if (!isNaN(parsedB)) {
+                  // b has a date, a does not
+                  return 1;
+                } else {
+                  // neither has a date
+                  return 0;
+                }
+              });
+              return sortedChapters.map((chapter, idx) => {
+                const displayDate = chapter.date || chapter.extractedDate;
+                return (
+                  <div 
+                    key={`${chapter.url}-${idx}`} 
+                    className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors"
+                    onClick={e => handleChapterClick(e, chapter)}
+                  >
+                    <div>
+                      <h3 className="font-medium text-white mb-1">{chapter.cleanTitle}</h3>
+                      <p className="text-sm text-gray-400">{chapter.number}</p>
+                    </div>
+                    <span className="flex items-center min-w-[140px] justify-end text-sm text-gray-500">
+                      <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" stroke="currentColor" fill="none" />
+                        <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" stroke="currentColor" />
+                        <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" stroke="currentColor" />
+                        <line x1="3" y1="10" x2="21" y2="10" strokeWidth="2" stroke="currentColor" />
+                      </svg>
+                      {formatDate(normalizeDateString(displayDate))}
+                    </span>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
       )}
