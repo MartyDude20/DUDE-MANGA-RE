@@ -60,10 +60,7 @@ SOURCE_MODULES = {
 }
 
 def is_admin(user):
-    """Check if user is admin (simple check for now)"""
-    # For now, consider users with ID 1 as admin
-    # In production, you'd want a proper admin field in the User model
-    return user and user.id == 1
+    return user and getattr(user, 'hasAdmin', False)
 
 def admin_required(f):
     """Decorator to require admin privileges"""
