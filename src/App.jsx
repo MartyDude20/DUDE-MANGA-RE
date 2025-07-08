@@ -13,6 +13,7 @@ import ResetPassword from './components/Auth/ResetPassword.jsx';
 import Profile from './components/Profile.jsx';
 import ReadHistory from './components/ReadHistory.jsx';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext.jsx';
+import LandingPage from './components/LandingPage.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -54,45 +55,32 @@ const PublicRoute = ({ children }) => {
 
 // Main App Content
 const AppContent = () => {
+  const { isAuthenticated } = useAuth();
   return (
     <div className="min-h-screen bg-gray-900">
-      <Header />
+      {isAuthenticated && <Header />}
       <main className="flex-1">
         <Routes>
-          <Route path="/" element={<SearchPage />} />
-          <Route path="/saved" element={<SavedManga />} />
-          <Route path="/sources" element={<Sources />} />
-          <Route path="/cache" element={
-            <ProtectedRoute>
-              <CacheManager />
-            </ProtectedRoute>
-          } />
-          <Route path="/manga/:source/:id" element={<MangaDetails />} />
-          <Route path="/auth" element={
-            <PublicRoute>
-              <AuthPage />
-            </PublicRoute>
-          } />
-          <Route path="/forgot-password" element={
-            <PublicRoute>
-              <ForgotPassword />
-            </PublicRoute>
-          } />
-          <Route path="/reset-password" element={
-            <PublicRoute>
-              <ResetPassword />
-            </PublicRoute>
-          } />
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-          <Route path="/read-history" element={
-            <ProtectedRoute>
-              <ReadHistory />
-            </ProtectedRoute>
-          } />
+          {!isAuthenticated ? (
+            <>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          ) : (
+            <>
+              <Route path="/" element={<SearchPage />} />
+              <Route path="/saved" element={<SavedManga />} />
+              <Route path="/sources" element={<Sources />} />
+              <Route path="/cache" element={<ProtectedRoute><CacheManager /></ProtectedRoute>} />
+              <Route path="/manga/:source/:id" element={<MangaDetails />} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/read-history" element={<ProtectedRoute><ReadHistory /></ProtectedRoute>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </>
+          )}
         </Routes>
       </main>
     </div>
