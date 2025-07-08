@@ -48,9 +48,14 @@ const Header = () => {
               Sources
             </Link>
             {isAuthenticated && (
-              <Link to="/cache" className="text-gray-300 hover:text-white font-medium transition-colors">
-                Cache
-              </Link>
+              <>
+                <Link to="/read-history" className="text-gray-300 hover:text-white font-medium transition-colors">
+                  History
+                </Link>
+                <Link to="/cache" className="text-gray-300 hover:text-white font-medium transition-colors">
+                  Cache
+                </Link>
+              </>
             )}
           </nav>
 
@@ -92,13 +97,6 @@ const Header = () => {
                       >
                         Profile
                       </Link>
-                      <Link
-                        to="/read-history"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                      >
-                        Read History
-                      </Link>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
@@ -135,14 +133,14 @@ const Header = () => {
           </Link>
           {isAuthenticated && (
             <>
+              <Link to="/read-history" className="block text-gray-300 hover:text-white py-2 transition-colors">
+                History
+              </Link>
               <Link to="/cache" className="block text-gray-300 hover:text-white py-2 transition-colors">
                 Cache
               </Link>
               <Link to="/profile" className="block text-gray-300 hover:text-white py-2 transition-colors">
                 Profile
-              </Link>
-              <Link to="/read-history" className="block text-gray-300 hover:text-white py-2 transition-colors">
-                Read History
               </Link>
               <button
                 onClick={handleLogout}
