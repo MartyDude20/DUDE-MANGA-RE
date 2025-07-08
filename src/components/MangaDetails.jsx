@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import MangaReaderModal from './MangaReaderModal.jsx';
+import { useAuth } from './Auth/AuthContext.jsx';
 
 // Helper function to format date
 function formatDate(dateStr) {
@@ -33,6 +34,7 @@ function normalizeDateString(dateStr) {
 
 const MangaDetails = () => {
   const { id, source } = useParams();
+  const { authFetch, isAuthenticated } = useAuth();
   const [manga, setManga] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -107,11 +109,37 @@ const MangaDetails = () => {
     }
   };
 
+  const recordReadHistory = async (chapter) => {
+    if (!isAuthenticated) return;
+    
+    try {
+              await authFetch('http://localhost:5000/read-history', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          manga_title: manga.title,
+          chapter_title: chapter.title,
+          source: source,
+          manga_id: id,
+          chapter_url: chapter.url,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to record read history:', err);
+    }
+  };
+
   const handleChapterClick = async (e, chapter) => {
     e.preventDefault();
     setReaderLoading(true);
     setReaderOpen(true);
     setReaderTitle(chapter.title);
+    
+    // Record read history when chapter is opened
+    await recordReadHistory(chapter);
+    
     try {
       let chapterId = chapter.url;
       if (source === 'mangadex') {
@@ -357,6 +385,10 @@ const MangaDetails = () => {
           setReaderLoading(true);
           setReaderOpen(true);
           setReaderTitle(chapter.title);
+          
+          // Record read history when chapter is opened
+          await recordReadHistory(chapter);
+          
           try {
             let chapterId = chapter.url;
             if (source === 'mangadex') {

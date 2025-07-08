@@ -85,6 +85,20 @@ const Header = () => {
                       <div className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">
                         Signed in as <span className="text-white">{user?.username}</span>
                       </div>
+                      <Link
+                        to="/profile"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                      >
+                        Profile
+                      </Link>
+                      <Link
+                        to="/read-history"
+                        onClick={() => setIsDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                      >
+                        Read History
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
@@ -123,6 +137,12 @@ const Header = () => {
             <>
               <Link to="/cache" className="block text-gray-300 hover:text-white py-2 transition-colors">
                 Cache
+              </Link>
+              <Link to="/profile" className="block text-gray-300 hover:text-white py-2 transition-colors">
+                Profile
+              </Link>
+              <Link to="/read-history" className="block text-gray-300 hover:text-white py-2 transition-colors">
+                Read History
               </Link>
               <button
                 onClick={handleLogout}

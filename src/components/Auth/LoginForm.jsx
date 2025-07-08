@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const LoginForm = ({ onLogin, onSwitchToRegister, isLoading = false }) => {
   const [formData, setFormData] = useState({
@@ -150,6 +151,17 @@ const LoginForm = ({ onLogin, onSwitchToRegister, isLoading = false }) => {
               {errors.password && (
                 <p className="mt-1 text-sm text-red-400">{errors.password}</p>
               )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <Link
+                to="/forgot-password"
+                className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                Forgot your password?
+              </Link>
             </div>
           </div>
 

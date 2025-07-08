@@ -10,12 +10,14 @@ from sources.asurascans import chapter_bp
 from sources.weebcentral import weebcentral_chapter_bp
 from cache_manager import CacheManager
 from flask_sqlalchemy import SQLAlchemy
-from flask_bcrypt import Bcrypt
-from models import db, User
+from flask_bcrypt import Bcrypt, check_password_hash, generate_password_hash
+from models import db, User, PasswordResetToken, ReadHistory
 from auth import init_auth, auth_manager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from functools import wraps
+import secrets
+from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -28,7 +30,7 @@ CORS(app,
      allow_headers=["Content-Type", "Authorization"],
      expose_headers=["Authorization"])
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///manga_cache.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 bcrypt = Bcrypt(app)
@@ -319,6 +321,139 @@ def register():
     db.session.add(user)
     db.session.commit()
     return jsonify({'message': 'User registered successfully'})
+
+# --- PASSWORD RESET ENDPOINTS ---
+@app.route('/password-reset/request', methods=['POST'])
+def password_reset_request():
+    data = request.get_json()
+    email = data.get('email')
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'message': 'If the email exists, a reset link will be sent.'}), 200
+    # Generate token
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(hours=1)
+    prt = PasswordResetToken(user_id=user.id, token=token, expires_at=expires_at)
+    db.session.add(prt)
+    db.session.commit()
+    # TODO: Send email with token (for now, return token in response)
+    return jsonify({'message': 'Password reset link generated.', 'token': token}), 200
+
+@app.route('/password-reset/confirm', methods=['POST'])
+def password_reset_confirm():
+    data = request.get_json()
+    token = data.get('token')
+    new_password = data.get('new_password')
+    if not token or not new_password:
+        return jsonify({'error': 'Token and new password are required'}), 400
+    prt = PasswordResetToken.query.filter_by(token=token, used=False).first()
+    if not prt or prt.expires_at < datetime.utcnow():
+        return jsonify({'error': 'Invalid or expired token'}), 400
+    user = User.query.get(prt.user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    prt.used = True
+    db.session.commit()
+    return jsonify({'message': 'Password has been reset.'}), 200
+
+# --- PROFILE MANAGEMENT ENDPOINTS ---
+@app.route('/profile', methods=['GET'])
+@auth_manager.login_required
+def get_profile():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    return jsonify({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'created_at': user.created_at,
+        'hasAdmin': user.hasAdmin
+    })
+
+@app.route('/profile', methods=['PUT'])
+@auth_manager.login_required
+def update_profile():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    data = request.get_json()
+    username = data.get('username')
+    email = data.get('email')
+    if username:
+        user.username = username
+    if email:
+        user.email = email
+    db.session.commit()
+    return jsonify({'message': 'Profile updated.'})
+
+@app.route('/profile/password', methods=['PUT'])
+@auth_manager.login_required
+def change_password():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    data = request.get_json()
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    if not old_password or not new_password:
+        return jsonify({'error': 'Old and new password required'}), 400
+    if not check_password_hash(user.password_hash, old_password):
+        return jsonify({'error': 'Old password incorrect'}), 400
+    user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    db.session.commit()
+    return jsonify({'message': 'Password changed.'})
+
+@app.route('/profile', methods=['DELETE'])
+@auth_manager.login_required
+def delete_account():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    db.session.delete(user)
+    db.session.commit()
+    return jsonify({'message': 'Account deleted.'})
+
+# --- READ HISTORY ENDPOINTS ---
+@app.route('/read-history', methods=['POST'])
+@auth_manager.login_required
+def add_read_history():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    data = request.get_json()
+    manga_title = data.get('manga_title')
+    chapter_title = data.get('chapter_title')
+    source = data.get('source')
+    manga_id = data.get('manga_id')
+    chapter_url = data.get('chapter_url')
+    if not all([manga_title, chapter_title, source, manga_id, chapter_url]):
+        return jsonify({'error': 'All fields are required'}), 400
+    rh = ReadHistory(user_id=user.id, manga_title=manga_title, chapter_title=chapter_title, source=source, manga_id=manga_id, chapter_url=chapter_url)
+    db.session.add(rh)
+    db.session.commit()
+    return jsonify({'message': 'Read history recorded.'})
+
+@app.route('/read-history', methods=['GET'])
+@auth_manager.login_required
+def get_read_history():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    history = ReadHistory.query.filter_by(user_id=user.id).order_by(ReadHistory.read_at.desc()).all()
+    return jsonify([
+        {
+            'manga_title': h.manga_title,
+            'chapter_title': h.chapter_title,
+            'source': h.source,
+            'manga_id': h.manga_id,
+            'chapter_url': h.chapter_url,
+            'read_at': h.read_at
+        } for h in history
+    ])
 
 if __name__ == '__main__':
     port = int(os.getenv('PLAYWRIGHT_PORT', 5000))

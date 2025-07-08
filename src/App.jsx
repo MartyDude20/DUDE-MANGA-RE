@@ -8,6 +8,10 @@ import Sources from './components/Sources.jsx';
 import SavedManga from './components/SavedManga.jsx';
 import CacheManager from './components/CacheManager.jsx';
 import AuthPage from './components/Auth/AuthPage.jsx';
+import ForgotPassword from './components/Auth/ForgotPassword.jsx';
+import ResetPassword from './components/Auth/ResetPassword.jsx';
+import Profile from './components/Profile.jsx';
+import ReadHistory from './components/ReadHistory.jsx';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext.jsx';
 
 // Protected Route Component
@@ -68,6 +72,26 @@ const AppContent = () => {
             <PublicRoute>
               <AuthPage />
             </PublicRoute>
+          } />
+          <Route path="/forgot-password" element={
+            <PublicRoute>
+              <ForgotPassword />
+            </PublicRoute>
+          } />
+          <Route path="/reset-password" element={
+            <PublicRoute>
+              <ResetPassword />
+            </PublicRoute>
+          } />
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/read-history" element={
+            <ProtectedRoute>
+              <ReadHistory />
+            </ProtectedRoute>
           } />
         </Routes>
       </main>
