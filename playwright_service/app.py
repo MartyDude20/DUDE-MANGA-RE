@@ -1,9 +1,11 @@
+import os
+from dotenv import load_dotenv
+# Explicitly load .env from the project root
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from playwright.sync_api import sync_playwright
 import re
-import os
-from dotenv import load_dotenv
 from sources import weebcentral, asurascans
 from sources import mangadex
 from sources.asurascans import chapter_bp
@@ -18,8 +20,10 @@ from flask_limiter.util import get_remote_address
 from functools import wraps
 import secrets
 from datetime import datetime, timedelta
+from email_config import init_email, send_password_reset_email, send_password_reset_success_email
 
-load_dotenv()
+print("TEST_ENV_CHECK:", os.getenv("TEST_ENV_CHECK"))
+print("MAIL_USERNAME:", os.getenv("MAIL_USERNAME"))
 
 app = Flask(__name__)
 # Configure CORS to allow credentials
@@ -44,6 +48,9 @@ limiter = Limiter(
 
 # Initialize authentication
 init_auth(app)
+
+# Initialize email configuration
+init_email(app)
 
 app.register_blueprint(chapter_bp)
 app.register_blueprint(weebcentral_chapter_bp)
@@ -353,15 +360,24 @@ def password_reset_request():
     db.session.add(prt)
     db.session.commit()
     
-    # TODO: Send email with token (for now, return token in response for development)
-    # In production, this should send an email with the reset link
+    # Send email with reset link
     reset_url = f"http://localhost:5173/reset-password?token={token}"
     
-    return jsonify({
-        'message': 'Password reset link has been sent to your email.',
-        'token': token,  # Remove this in production
-        'reset_url': reset_url  # Remove this in production
-    }), 200
+    # Try to send email
+    print(f"📧 Sending password reset email to {user.email}")
+    email_sent, email_error = send_password_reset_email(user.email, user.username, reset_url)
+    
+    if email_sent:
+        print(f"✅ Password reset email sent successfully to {user.email}")
+        return jsonify({
+            'message': 'Password reset link has been sent to your email.'
+        }), 200
+    else:
+        # Log the error but don't expose it to the user
+        print(f"❌ Failed to send password reset email to {user.email}: {email_error}")
+        return jsonify({
+            'message': 'If an account with that email exists, a password reset link has been sent.'
+        }), 200
 
 @app.route('/password-reset/confirm', methods=['POST'])
 def password_reset_confirm():
@@ -379,6 +395,12 @@ def password_reset_confirm():
     user.password_hash = bcrypt.generate_password_hash(new_password).decode('utf-8')
     prt.used = True
     db.session.commit()
+    
+    # Send confirmation email
+    email_sent, email_error = send_password_reset_success_email(user.email, user.username)
+    if not email_sent:
+        print(f"Failed to send password reset success email: {email_error}")
+    
     return jsonify({'message': 'Password has been reset.'}), 200
 
 # --- PROFILE MANAGEMENT ENDPOINTS ---
