@@ -329,17 +329,39 @@ def password_reset_request():
     email = data.get('email')
     if not email:
         return jsonify({'error': 'Email is required'}), 400
+    
     user = User.query.filter_by(email=email).first()
     if not user:
-        return jsonify({'message': 'If the email exists, a reset link will be sent.'}), 200
-    # Generate token
+        # Don't reveal if email exists or not for security
+        return jsonify({'message': 'If an account with that email exists, a password reset link has been sent.'}), 200
+    
+    # Check if there's already an unused token for this user
+    existing_token = PasswordResetToken.query.filter_by(user_id=user.id, used=False).first()
+    if existing_token and existing_token.expires_at > datetime.utcnow():
+        # Token still valid, return the same message
+        return jsonify({'message': 'If an account with that email exists, a password reset link has been sent.'}), 200
+    
+    # Generate new token
     token = secrets.token_urlsafe(32)
     expires_at = datetime.utcnow() + timedelta(hours=1)
+    
+    # Mark old tokens as used
+    if existing_token:
+        existing_token.used = True
+    
     prt = PasswordResetToken(user_id=user.id, token=token, expires_at=expires_at)
     db.session.add(prt)
     db.session.commit()
-    # TODO: Send email with token (for now, return token in response)
-    return jsonify({'message': 'Password reset link generated.', 'token': token}), 200
+    
+    # TODO: Send email with token (for now, return token in response for development)
+    # In production, this should send an email with the reset link
+    reset_url = f"http://localhost:5173/reset-password?token={token}"
+    
+    return jsonify({
+        'message': 'Password reset link has been sent to your email.',
+        'token': token,  # Remove this in production
+        'reset_url': reset_url  # Remove this in production
+    }), 200
 
 @app.route('/password-reset/confirm', methods=['POST'])
 def password_reset_confirm():

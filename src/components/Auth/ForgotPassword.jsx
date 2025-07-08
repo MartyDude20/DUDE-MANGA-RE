@@ -30,8 +30,14 @@ const ForgotPassword = () => {
       });
 
       if (response.ok) {
-        setMessage('If an account with that email exists, a password reset link has been sent.');
+        const data = await response.json();
+        setMessage(data.message);
         setEmail('');
+        
+        // For development: show the reset URL and token
+        if (data.reset_url && data.token) {
+          setMessage(prev => prev + `\n\nDevelopment Info:\nReset URL: ${data.reset_url}\nToken: ${data.token}`);
+        }
       } else {
         const data = await response.json();
         setError(data.error || 'Failed to request password reset');
