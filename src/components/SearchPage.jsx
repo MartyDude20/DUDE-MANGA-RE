@@ -10,7 +10,7 @@ const DEFAULT_SOURCES = [
 ];
 
 const SearchPage = () => {
-  const { authFetch } = useAuth();
+  const { authFetch, user } = useAuth();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -38,6 +38,8 @@ const SearchPage = () => {
       localStorage.setItem('mangaSources', JSON.stringify(DEFAULT_SOURCES));
     }
   }, []);
+
+
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -222,8 +224,8 @@ const SearchPage = () => {
                 {isOpen && (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 px-6 pb-6">
                     {groupedResults[sourceId].map((manga) => (
-                      <MangaCard key={manga.id + manga.source} manga={manga} />
-                    ))}
+            <MangaCard key={manga.id + manga.source} manga={manga} />
+          ))}
                   </div>
                 )}
               </div>
