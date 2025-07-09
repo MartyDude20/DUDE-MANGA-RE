@@ -61,7 +61,7 @@ const AppContent = () => {
     <div className="min-h-screen bg-gray-900">
       {isAuthenticated && <Header />}
       <main className="flex-1">
-        <Routes>
+          <Routes>
           {!isAuthenticated ? (
             <>
               <Route path="/" element={<LandingPage />} />
@@ -72,20 +72,20 @@ const AppContent = () => {
             </>
           ) : (
             <>
-              <Route path="/" element={<SearchPage />} />
+            <Route path="/" element={<SearchPage />} />
               <Route path="/saved" element={<SavedManga />} />
               <Route path="/sources" element={<Sources />} />
               <Route path="/cache" element={<ProtectedRoute><CacheManager /></ProtectedRoute>} />
               <Route path="/preload" element={<ProtectedRoute><PreloadManager /></ProtectedRoute>} />
-              <Route path="/manga/:source/:id" element={<MangaDetails />} />
+            <Route path="/manga/:source/:id" element={<MangaDetails />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/read-history" element={<ProtectedRoute><ReadHistory /></ProtectedRoute>} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           )}
-        </Routes>
-      </main>
-    </div>
+          </Routes>
+        </main>
+      </div>
   );
 };
 
@@ -94,7 +94,7 @@ function App() {
     <AuthProvider>
       <Router>
         <AppContent />
-      </Router>
+    </Router>
     </AuthProvider>
   );
 }

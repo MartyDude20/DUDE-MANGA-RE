@@ -146,17 +146,31 @@ class PreloadManager:
         
         # Create search preload jobs
         for source in self.source_configs.keys():
-            for search_term in random.sample(self.popular_searches, 5):  # Random 5 searches per source
+            if source == 'asurascans':
+                # For AsuraScans, create a pagination job instead of search jobs
                 job = PreloadJob(
-                    job_type='search',
+                    job_type='asurascans_pagination',
                     source=source,
-                    target_id=search_term,
+                    target_id='50',  # Max 50 pages
                     status='pending',
                     priority=random.randint(1, 10),
                     scheduled_at=scheduled_time
                 )
                 db.session.add(job)
                 jobs_created += 1
+            else:
+                # For other sources, use search terms
+                for search_term in random.sample(self.popular_searches, 5):  # Random 5 searches per source
+                    job = PreloadJob(
+                        job_type='search',
+                        source=source,
+                        target_id=search_term,
+                        status='pending',
+                        priority=random.randint(1, 10),
+                        scheduled_at=scheduled_time
+                    )
+                    db.session.add(job)
+                    jobs_created += 1
         
         # Create manga details preload jobs (based on recent searches)
         recent_searches = self.get_recent_popular_searches()
@@ -322,6 +336,10 @@ class PreloadManager:
                 success = self._preload_manga_details(job.source, job.target_id)
             elif job.job_type == 'chapter_images':
                 success = self._preload_chapter_images(job.source, job.target_id)
+            elif job.job_type == 'asurascans_pagination':
+                # For pagination jobs, target_id contains max_pages as string
+                max_pages = int(job.target_id) if job.target_id.isdigit() else 50
+                success = self._preload_asurascans_pagination(max_pages)
             else:
                 logger.error(f"Unknown job type: {job.job_type}")
                 success = False
@@ -375,6 +393,55 @@ class PreloadManager:
                 
         except Exception as e:
             logger.error(f"Error preloading search {query} for {source}: {e}")
+            return False
+
+    def _preload_asurascans_pagination(self, max_pages: int = 50) -> bool:
+        """Preload all AsuraScans manga using pagination"""
+        try:
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                
+                # Set user agent
+                page.set_extra_http_headers({
+                    'User-Agent': self.source_configs['asurascans']['user_agent']
+                })
+                
+                # Get all manga from pagination
+                all_manga = asurascans.get_all_manga_from_pagination(page, max_pages)
+                
+                if not all_manga:
+                    logger.warning("No manga found during AsuraScans pagination preload")
+                    return False
+                
+                # Cache all manga as search results with a special key
+                cache_key = "asurascans_all_manga"
+                self.cache_manager.cache_search_results(cache_key, 'asurascans', all_manga, user_id=None)
+                
+                # Also cache individual manga details for popular ones
+                popular_manga = all_manga[:20]  # Cache details for first 20 manga
+                for manga in popular_manga:
+                    try:
+                        # Add delay between requests
+                        time.sleep(self.get_respectful_delay('asurascans'))
+                        
+                        details = asurascans.get_details(page, manga['id'])
+                        self.cache_manager.cache_manga_details(manga['id'], 'asurascans', details, user_id=None)
+                        
+                        logger.info(f"Preloaded details for AsuraScans manga: {manga['title']}")
+                        
+                    except Exception as e:
+                        logger.error(f"Error preloading details for {manga['id']}: {e}")
+                        continue
+                
+                page.close()
+                browser.close()
+                
+                logger.info(f"Preloaded AsuraScans pagination: {len(all_manga)} total manga, {len(popular_manga)} detailed")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error preloading AsuraScans pagination: {e}")
             return False
     
     def _preload_manga_details(self, source: str, manga_id: str) -> bool:

@@ -47,6 +47,89 @@ def search(page: Page, query: str):
     print(f"AsuraScans: returning {len(results)} results for query '{query}'")
     return results
 
+def get_all_manga_from_pagination(page: Page, max_pages: int = 100):
+    """
+    Get all manga from AsuraScans by crawling through pagination
+    Returns a list of all manga found across all pages
+    """
+    all_manga = []
+    page_number = 1
+    
+    print(f"AsuraScans: Starting pagination crawl (max {max_pages} pages)")
+    
+    while page_number <= max_pages:
+        try:
+            # Navigate to the series page without search query
+            pagination_url = f"https://asuracomic.net/series?page={page_number}"
+            print(f"AsuraScans: Crawling page {page_number}: {pagination_url}")
+            
+            page.goto(pagination_url)
+            page.wait_for_load_state('networkidle')
+            
+            # Get all manga cards on this page
+            cards = page.query_selector_all('a[href^="series/"]')
+            
+            if not cards:
+                print(f"AsuraScans: No more manga found on page {page_number}, stopping pagination")
+                break
+            
+            print(f"AsuraScans: Found {len(cards)} manga on page {page_number}")
+            
+            page_manga = []
+            for card in cards:
+                try:
+                    link = card.get_attribute('href')
+                    manga_id = extract_manga_id_from_url(link) if link else None
+                    
+                    # Image
+                    img_elem = card.query_selector('img')
+                    image_url = img_elem.get_attribute('src') if img_elem else None
+                    
+                    # Title (use span.text-[13.3px].block for most specific selection)
+                    title_elem = card.query_selector('span.text-\[13\.3px\].block')
+                    title = title_elem.inner_text().strip() if title_elem else None
+                    
+                    # Chapter (regex-based extraction using page.locator)
+                    chapter = ''
+                    try:
+                        chapter_span = page.locator(f'a[href="{link}"] span', has_text=re.compile(r'Chapter'))
+                        if chapter_span.count() > 0:
+                            chapter = chapter_span.first.inner_text().replace('Chapter', '').strip()
+                    except Exception as e:
+                        print(f"AsuraScans chapter regex error: {e}")
+                    
+                    if manga_id and title:  # Only add if we have valid data
+                        page_manga.append({
+                            'id': manga_id,
+                            'title': title,
+                            'status': '',
+                            'chapter': chapter,
+                            'image': image_url,
+                            'details_url': link,
+                            'source': 'asurascans'
+                        })
+                except Exception as e:
+                    print(f"AsuraScans error processing card: {e}")
+                    continue
+            
+            # Add manga from this page to total results
+            all_manga.extend(page_manga)
+            print(f"AsuraScans: Added {len(page_manga)} manga from page {page_number}")
+            
+            # Check if we've seen this page before (duplicate detection)
+            if len(page_manga) == 0:
+                print(f"AsuraScans: No valid manga found on page {page_number}, stopping pagination")
+                break
+            
+            page_number += 1
+            
+        except Exception as e:
+            print(f"AsuraScans error on page {page_number}: {e}")
+            break
+    
+    print(f"AsuraScans: Pagination crawl complete. Total manga found: {len(all_manga)}")
+    return all_manga
+
 def get_details(page: Page, manga_id: str):
     manga_url = f"https://asuracomic.net/series/{manga_id}"
     page.goto(manga_url)

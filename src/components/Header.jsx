@@ -73,8 +73,8 @@ const Header = () => {
       <div className="max-w-6xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="text-2xl font-bold text-blue-500 hover:text-blue-400 transition-colors">
-            Dude Manga
-          </Link>
+          Dude Manga
+        </Link>
           
           <nav className="hidden md:flex space-x-8">
             <Link to="/" className="text-gray-300 hover:text-white font-medium transition-colors">

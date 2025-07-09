@@ -1,0 +1,8 @@
+# PostgreSQL dependencies for cache system
+psycopg2-binary==2.9.9
+
+# Optional: For better PostgreSQL performance
+# psycopg2-pool==1.1
+
+# Development dependencies
+# python-dotenv==1.0.0  # For environment variable management 
