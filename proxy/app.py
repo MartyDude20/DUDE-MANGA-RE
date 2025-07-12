@@ -7,7 +7,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+def custom_cors_origin(origin):
+    allowed = {"http://localhost:5173", "http://127.0.0.1:5173"}
+    if origin in allowed:
+        return origin
+    return None
+
+CORS(
+    app,
+    origins="*",
+    supports_credentials=True,
+    methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["Authorization"]
+)
 
 PLAYWRIGHT_URL = f"http://localhost:{os.getenv('PLAYWRIGHT_PORT', 5000)}"
 
@@ -138,6 +152,157 @@ def preloader_search_stats():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'service': 'flask-proxy'})
+
+# Authentication endpoints
+@app.route('/api/login', methods=['POST'])
+def login():
+    """Login endpoint"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/login", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code, dict(response.headers)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Login failed: {str(e)}'}), 500
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    """Register endpoint"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/register", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Registration failed: {str(e)}'}), 500
+
+@app.route('/api/refresh', methods=['POST'])
+def refresh():
+    """Refresh token endpoint"""
+    try:
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/refresh", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code, dict(response.headers)
+    except requests.RequestException as e:
+        return jsonify({'error': f'Token refresh failed: {str(e)}'}), 500
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    """Logout endpoint"""
+    try:
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/logout", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Logout failed: {str(e)}'}), 500
+
+@app.route('/api/me', methods=['GET'])
+def get_current_user():
+    """Get current user info"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/me", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get user info: {str(e)}'}), 500
+
+@app.route('/api/password-reset/request', methods=['POST'])
+def password_reset_request():
+    """Request password reset"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/password-reset/request", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Password reset request failed: {str(e)}'}), 500
+
+@app.route('/api/password-reset/confirm', methods=['POST'])
+def password_reset_confirm():
+    """Confirm password reset"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/password-reset/confirm", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Password reset confirmation failed: {str(e)}'}), 500
+
+@app.route('/api/profile', methods=['GET'])
+def get_profile():
+    """Get user profile"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/profile", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get profile: {str(e)}'}), 500
+
+@app.route('/api/profile', methods=['PUT'])
+def update_profile():
+    """Update user profile"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.put(f"{PLAYWRIGHT_URL}/profile", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to update profile: {str(e)}'}), 500
+
+@app.route('/api/profile/password', methods=['PUT'])
+def change_password():
+    """Change user password"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.put(f"{PLAYWRIGHT_URL}/profile/password", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to change password: {str(e)}'}), 500
+
+@app.route('/api/profile', methods=['DELETE'])
+def delete_account():
+    """Delete user account"""
+    try:
+        headers = get_forward_headers()
+        response = requests.delete(f"{PLAYWRIGHT_URL}/profile", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to delete account: {str(e)}'}), 500
+
+@app.route('/api/read-history', methods=['GET'])
+def get_read_history():
+    """Get user read history"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/read-history", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get read history: {str(e)}'}), 500
+
+@app.route('/api/read-history', methods=['POST'])
+def add_read_history():
+    """Add to user read history"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/read-history", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to add read history: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('FLASK_PORT', 3006))

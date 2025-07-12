@@ -31,7 +31,7 @@ print("MAIL_USERNAME:", os.getenv("MAIL_USERNAME"))
 app = Flask(__name__)
 # Configure CORS to allow credentials
 CORS(app, 
-     origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+     origins="*",
      supports_credentials=True,
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
      allow_headers=["Content-Type", "Authorization"],
@@ -76,7 +76,7 @@ SOURCE_MODULES = {
 }
 
 def is_admin(user):
-    return user and getattr(user, 'hasAdmin', False)
+    return user and getattr(user, 'hasadmin', False)
 
 def admin_required(f):
     """Decorator to require admin privileges"""
@@ -162,7 +162,7 @@ def get_manga_details(source, manga_id):
     try:
         # For now, use the old cache manager for manga details
         # TODO: Implement manga details caching in simple search service
-        details = cache_manager.get_manga_details(manga_id, source, user_id)
+        details = cache_manager.get_cached_manga(manga_id, source, user_id)
         
         if not details or force_refresh:
             # Scrape fresh details
@@ -519,7 +519,7 @@ def get_profile():
         'username': user.username,
         'email': user.email,
         'created_at': user.created_at,
-        'hasAdmin': user.hasAdmin
+        'hasAdmin': user.hasadmin
     })
 
 @app.route('/profile', methods=['PUT'])

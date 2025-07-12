@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { API_ENDPOINTS } from '../../config/api';
 
 const LoginForm = ({ onLogin, onSwitchToRegister, isLoading = false }) => {
   const [formData, setFormData] = useState({
@@ -35,7 +36,7 @@ const LoginForm = ({ onLogin, onSwitchToRegister, isLoading = false }) => {
     setErrors({});
     
     try {
-      const response = await fetch('http://localhost:5000/login', {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
