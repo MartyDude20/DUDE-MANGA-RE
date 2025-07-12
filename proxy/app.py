@@ -100,6 +100,40 @@ def cleanup_cache():
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to cleanup cache: {str(e)}'}), 500
 
+@app.route('/api/preloader/status', methods=['GET'])
+def preloader_status():
+    """Get preloader status"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/preloader/status", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get preloader status: {str(e)}'}), 500
+
+@app.route('/api/preloader/trigger', methods=['POST'])
+def trigger_preload():
+    """Trigger preloading"""
+    try:
+        data = request.get_json() or {}
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/preloader/trigger", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to trigger preload: {str(e)}'}), 500
+
+@app.route('/api/preloader/search-stats', methods=['GET'])
+def preloader_search_stats():
+    """Get preloader search statistics"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/preloader/search-stats", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get search stats: {str(e)}'}), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""

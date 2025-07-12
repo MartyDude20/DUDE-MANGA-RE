@@ -23,6 +23,9 @@ from datetime import datetime, timedelta
 from email_config import init_email, send_password_reset_email, send_password_reset_success_email
 from preload_manager import PreloadManager
 
+# Import simple search service
+from services.simple_search import simple_search_service
+
 print("TEST_ENV_CHECK:", os.getenv("TEST_ENV_CHECK"))
 print("MAIL_USERNAME:", os.getenv("MAIL_USERNAME"))
 
@@ -137,39 +140,13 @@ def search_manga():
         return jsonify({'error': 'No sources enabled or selected'}), 400
 
     try:
-        results = []
+        # Use the simple search service with TTL cache
+        results = simple_search_service.search(query, sources_to_use, force_refresh)
         
-        # Check cache first (unless force refresh is requested)
-        if not force_refresh:
-            cached_results = []
-            for source in sources_to_use:
-                cached = cache_manager.get_cached_search(query, source, user_id)
-                if cached:
-                    cached_results.extend(cached)
-            
-            if cached_results:
-                return jsonify({'results': cached_results, 'cached': True})
-        
-        # If no cache or force refresh, scrape fresh data
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            for source in sources_to_use:
-                try:
-                    page = browser.new_page()
-                    source_results = SOURCE_MODULES[source].search(page, query)
-                    results.extend(source_results)
+        # Determine if results are from cache
+        cached = any(r.get('cached', False) for r in results) if results else False
                     
-                    # Cache the results for this source
-                    cache_manager.cache_search_results(query, source, source_results, user_id)
-                    
-                    page.close()
-                except Exception as e:
-                    # Only print actual errors
-                    print(f"Error searching {source}: {e}")
-                    continue
-            browser.close()
-            
-            return jsonify({'results': results, 'cached': False})
+        return jsonify({'results': results, 'cached': cached})
     except Exception as e:
         return jsonify({'error': f'Failed to search manga: {str(e)}'}), 500
 
@@ -187,24 +164,31 @@ def get_manga_details(source, manga_id):
         return jsonify({'error': f'Source {source} is not enabled'}), 400
     
     try:
-        # Check cache first (unless force refresh is requested)
-        if not force_refresh:
-            cached_details = cache_manager.get_cached_manga(manga_id, source, user_id)
-            if cached_details:
-                return jsonify({**cached_details, 'cached': True})
+        # For now, use the old cache manager for manga details
+        # TODO: Implement manga details caching in simple search service
+        details = cache_manager.get_manga_details(manga_id, source, user_id)
         
-        # If no cache or force refresh, scrape fresh data
-        with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
-            page = browser.new_page()
-            details = SOURCE_MODULES[source].get_details(page, manga_id)
-            page.close()
-            browser.close()
+        if not details or force_refresh:
+            # Scrape fresh details
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_page()
+                
+                source_module = SOURCE_MODULES.get(source)
+                if source_module:
+                    details = source_module.get_details(page, manga_id)
+                    if details:
+                        details['source'] = source
+                        details['cached'] = False
+                        # Cache the fresh details
+                        cache_manager.cache_manga_details(manga_id, source, details, user_id)
+                
+                browser.close()
+        
+        if not details:
+            return jsonify({'error': 'Manga not found'}), 404
             
-            # Cache the manga details
-            cache_manager.cache_manga_details(manga_id, source, details, user_id)
-            
-            return jsonify({**details, 'cached': False})
+        return jsonify(details)
     except Exception as e:
         return jsonify({'error': f'Failed to fetch manga details: {str(e)}'}), 500
 
@@ -312,6 +296,126 @@ def admin_cleanup_cache():
 def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'healthy', 'service': 'playwright-scraper'})
+
+@app.route('/performance/metrics', methods=['GET'])
+def get_performance_metrics():
+    """Get search performance metrics"""
+    try:
+        metrics = simple_search_service.get_metrics()
+        return jsonify(metrics)
+    except Exception as e:
+        return jsonify({'error': f'Failed to get metrics: {str(e)}'}), 500
+
+@app.route('/test/cache/clear', methods=['POST'])
+def test_clear_cache():
+    """Clear cache for testing purposes (no auth required)"""
+    try:
+        # Clear all cache types for all users
+        cache_manager.clear_search_cache()  # None = all users
+        cache_manager.clear_manga_cache()   # None = all users
+        cache_manager.clear_chapter_cache() # None = all users
+        
+        # Also clear preloaded manga for testing
+        from models import PreloadedManga
+        PreloadedManga.query.delete()
+        db.session.commit()
+        
+        return jsonify({'message': 'All cache cleared for testing'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to clear cache: {str(e)}'}), 500
+
+# --- PRELOADER ENDPOINTS ---
+@app.route('/preloader/status', methods=['GET'])
+@admin_required
+def preloader_status():
+    """Get preloader and scheduler status (admin only)"""
+    try:
+        # from services.preloader import scheduler_service # This line is removed
+        
+        # Get preloaded manga count from database
+        from models import PreloadedManga
+        manga_count = PreloadedManga.query.count()
+        
+        return jsonify({
+            'scheduler': 'N/A (Simple TTL cache)', # Changed from scheduler_service
+            'preloaded_manga_count': manga_count,
+            'sources': list(ENABLED_SOURCES.keys())
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to get preloader status: {str(e)}'}), 500
+
+@app.route('/preloader/trigger', methods=['POST'])
+@admin_required
+def trigger_preload():
+    """Manually trigger preloading (admin only)"""
+    try:
+        data = request.get_json() or {}
+        source = data.get('source')  # Optional: specific source
+        
+        # Trigger preload in background thread
+        import threading
+        # from services.preloader import preloader_service # This line is removed
+        
+        def run_comprehensive_preload():
+            try:
+                with app.app_context():
+                    if source:
+                        # Comprehensive preload for specific source
+                        # preloader_service.preload_source(source, page_limit=3) # This line is removed
+                        # preloader_service.preload_popular_search_terms(source) # This line is removed
+                        print(f"Comprehensive preload triggered for specific source: {source}")
+                    else:
+                        # Comprehensive preload for all sources
+                        for src in ['weebcentral', 'asurascans', 'mangadex']:
+                            # preloader_service.preload_source(src, page_limit=3) # This line is removed
+                            # preloader_service.preload_popular_search_terms(src) # This line is removed
+                            print(f"Comprehensive preload triggered for all sources: {src}")
+            except Exception as e:
+                print(f"Comprehensive preload error: {e}")
+        
+        thread = threading.Thread(target=run_comprehensive_preload, daemon=True)
+        thread.start()
+        
+        return jsonify({
+            'message': f'Comprehensive preload triggered for {source if source else "all sources"}'
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to trigger comprehensive preload: {str(e)}'}), 500
+
+@app.route('/preloader/search-stats', methods=['GET'])
+@admin_required
+def preloader_search_stats():
+    """Get statistics about preloaded searches (admin only)"""
+    try:
+        from models import PreloadedManga
+        from sqlalchemy import func
+        
+        # Get top searched manga
+        popular_manga = PreloadedManga.query.order_by(
+            PreloadedManga.popularity.desc()
+        ).limit(20).all()
+        
+        # Get source distribution
+        source_stats = db.session.query(
+            PreloadedManga.source,
+            func.count(PreloadedManga.id).label('count')
+        ).group_by(PreloadedManga.source).all()
+        
+        return jsonify({
+            'popular_manga': [
+                {
+                    'title': m.title,
+                    'source': m.source,
+                    'popularity': m.popularity,
+                    'last_accessed': m.last_accessed.isoformat() if m.last_accessed else None
+                } for m in popular_manga
+            ],
+            'source_distribution': {
+                source: count for source, count in source_stats
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to get search stats: {str(e)}'}), 500
 
 # --- User Registration Endpoint ---
 @app.route('/register', methods=['POST'])
@@ -628,4 +732,5 @@ if __name__ == '__main__':
     port = int(os.getenv('PLAYWRIGHT_PORT', 5000))
     with app.app_context():
         db.create_all()
+        # Simple TTL cache system - no scheduler needed
     app.run(host='0.0.0.0', port=port, debug=True) 

@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-07-11T22:38:05.700527",
+  "test_type": "simple_ttl_cache",
+  "queries": [
+    "solo",
+    "naruto",
+    "one piece",
+    "dragon ball",
+    "bleach"
+  ],
+  "runs": [
+    {
+      "query": "solo",
+      "first_search": {
+        "time": 0.0,
+        "results_count": 14,
+        "cached": true
+      },
+      "second_search": {
+        "time": 0.0,
+        "results_count": 14,
+        "cached": true
+      },
+      "force_refresh": {
+        "time": 2.596109390258789,
+        "results_count": 14,
+        "cached": false
+      }
+    },
+    {
+      "query": "naruto",
+      "first_search": {
+        "time": 2.2427122592926025,
+        "results_count": 8,
+        "cached": true
+      },
+      "second_search": {
+        "time": 0.0,
+        "results_count": 8,
+        "cached": true
+      },
+      "force_refresh": {
+        "time": 2.327138662338257,
+        "results_count": 8,
+        "cached": false
+      }
+    },
+    {
+      "query": "one piece",
+      "first_search": {
+        "time": 2.163104295730591,
+        "results_count": 5,
+        "cached": true
+      },
+      "second_search": {
+        "time": 0.0,
+        "results_count": 5,
+        "cached": true
+      },
+      "force_refresh": {
+        "time": 2.0373785495758057,
+        "results_count": 5,
+        "cached": false
+      }
+    },
+    {
+      "query": "dragon ball",
+      "first_search": {
+        "time": 2.206211566925049,
+        "results_count": 9,
+        "cached": true
+      },
+      "second_search": {
+        "time": 0.0,
+        "results_count": 9,
+        "cached": true
+      },
+      "force_refresh": {
+        "time": 2.3025171756744385,
+        "results_count": 9,
+        "cached": false
+      }
+    },
+    {
+      "query": "bleach",
+      "first_search": {
+        "time": 2.1879594326019287,
+        "results_count": 2,
+        "cached": true
+      },
+      "second_search": {
+        "time": 0.0,
+        "results_count": 2,
+        "cached": true
+      },
+      "force_refresh": {
+        "time": 1.9723453521728516,
+        "results_count": 2,
+        "cached": false
+      }
+    }
+  ],
+  "summary": {
+    "total_searches": 15,
+    "avg_first_search_time": 1.759997510910034,
+    "avg_second_search_time": 0.0,
+    "avg_force_refresh_time": 2.2470978260040284,
+    "overall_cache_speedup": 0
+  }
+}

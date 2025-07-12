@@ -13,3 +13,4 @@ PyJWT==2.8.0
 redis==5.0.1
 flask-limiter==3.5.0
 flask-mail==0.9.1 
+schedule==1.2.0 

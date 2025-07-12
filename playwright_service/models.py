@@ -40,54 +40,37 @@ class ReadHistory(db.Model):
     source = db.Column(db.String(64), nullable=False)
     manga_id = db.Column(db.String(128), nullable=False)
     chapter_url = db.Column(db.String(255), nullable=False)
-    read_at = db.Column(db.DateTime, default=datetime.utcnow)
+    read_at = db.Column(db.DateTime, default=datetime.utcnow) 
 
-class PreloadJob(db.Model):
-    __tablename__ = 'preload_jobs'
-    id = db.Column(db.Integer, primary_key=True)
-    job_type = db.Column(db.String(32), nullable=False)  # 'search', 'manga_details', 'chapter_images'
-    source = db.Column(db.String(64), nullable=False)
-    target_id = db.Column(db.String(255), nullable=False)  # query, manga_id, or chapter_url
-    status = db.Column(db.String(32), default='pending')  # pending, running, completed, failed
-    priority = db.Column(db.Integer, default=5)  # 1-10, lower is higher priority
-    scheduled_at = db.Column(db.DateTime, nullable=False)
-    started_at = db.Column(db.DateTime)
-    completed_at = db.Column(db.DateTime)
-    error_message = db.Column(db.Text)
-    retry_count = db.Column(db.Integer, default=0)
-    max_retries = db.Column(db.Integer, default=3)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+class PreloadedManga(db.Model):
+    """Model for storing preloaded manga data for instant search results"""
+    __tablename__ = 'preloaded_manga'
     
-    def __repr__(self):
-        return f'<PreloadJob {self.job_type}:{self.source}:{self.target_id}>'
-
-class PreloadStats(db.Model):
-    __tablename__ = 'preload_stats'
     id = db.Column(db.Integer, primary_key=True)
-    source = db.Column(db.String(64), nullable=False)
-    job_type = db.Column(db.String(32), nullable=False)
-    date = db.Column(db.Date, nullable=False)
-    total_jobs = db.Column(db.Integer, default=0)
-    successful_jobs = db.Column(db.Integer, default=0)
-    failed_jobs = db.Column(db.Integer, default=0)
-    total_errors = db.Column(db.Integer, default=0)
-    avg_response_time = db.Column(db.Float)  # in seconds
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    __table_args__ = (db.UniqueConstraint('source', 'job_type', 'date'),)
-    
-    def __repr__(self):
-        return f'<PreloadStats {self.source}:{self.job_type}:{self.date}>'
-
-class RobotsTxtCache(db.Model):
-    __tablename__ = 'robots_txt_cache'
-    id = db.Column(db.Integer, primary_key=True)
-    domain = db.Column(db.String(255), nullable=False, unique=True)
-    robots_content = db.Column(db.Text)
-    crawl_delay = db.Column(db.Float)  # in seconds
-    user_agent = db.Column(db.String(255))
+    title = db.Column(db.String(255), nullable=False, index=True)
+    normalized_title = db.Column(db.String(255), nullable=False, index=True)  # For case-insensitive search
+    source_url = db.Column(db.String(512), unique=True, nullable=False)
+    cover_url = db.Column(db.String(512))
+    description = db.Column(db.Text)
+    chapters = db.Column(db.JSON)  # Store chapters as JSON
+    source = db.Column(db.String(64), nullable=False, index=True)
+    author = db.Column(db.String(255))
+    status = db.Column(db.Text)
+    popularity = db.Column(db.Integer, default=0)
+    last_accessed = db.Column(db.DateTime)
     last_updated = db.Column(db.DateTime, default=datetime.utcnow)
-    is_allowed = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Create composite index for faster searches
+    __table_args__ = (
+        db.Index('idx_manga_source_updated', 'source', 'last_updated'),
+        db.Index('idx_manga_title_source', 'normalized_title', 'source'),
+    )
     
     def __repr__(self):
-        return f'<RobotsTxtCache {self.domain}>' 
+        return f'<PreloadedManga {self.title} from {self.source}>'
+    
+    @staticmethod
+    def normalize_title(title):
+        """Normalize title for case-insensitive search"""
+        return title.strip().lower() if title else '' 
