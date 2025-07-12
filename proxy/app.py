@@ -304,6 +304,17 @@ def add_read_history():
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to add read history: {str(e)}'}), 500
 
+@app.route('/api/read-history/clear', methods=['DELETE'])
+def clear_read_history():
+    """Clear user read history"""
+    try:
+        headers = get_forward_headers()
+        response = requests.delete(f"{PLAYWRIGHT_URL}/read-history/clear", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to clear read history: {str(e)}'}), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('FLASK_PORT', 3006))
     app.run(host='0.0.0.0', port=port, debug=True) 

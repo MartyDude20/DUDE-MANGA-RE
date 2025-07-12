@@ -603,6 +603,26 @@ def get_read_history():
         } for h in history
     ])
 
+@app.route('/read-history/clear', methods=['DELETE'])
+@auth_manager.login_required
+def clear_read_history():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        # Delete all read history entries for the current user
+        deleted_count = ReadHistory.query.filter_by(user_id=user.id).delete()
+        db.session.commit()
+        
+        return jsonify({
+            'message': f'Successfully cleared {deleted_count} read history entries.',
+            'deleted_count': deleted_count
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to clear read history: {str(e)}'}), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('PLAYWRIGHT_PORT', 5000))
     with app.app_context():
