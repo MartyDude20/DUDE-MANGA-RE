@@ -103,13 +103,15 @@ const Header = () => {
                       >
                         Profile
                       </Link>
-                      <Link
-                        to="/cache"
-                        onClick={() => setIsDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                      >
-                        Cache
-                      </Link>
+                      {user?.hasAdmin && (
+                        <Link
+                          to="/cache"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                        >
+                          Cache
+                        </Link>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
@@ -218,13 +220,15 @@ const Header = () => {
                 >
                   Profile
                 </Link>
-                <Link 
-                  to="/cache" 
-                  onClick={closeMobileMenu}
-                  className="block text-gray-300 hover:text-white py-3 px-3 rounded-md hover:bg-gray-700 transition-colors font-medium"
-                >
-                  Cache
-                </Link>
+                {user?.hasAdmin && (
+                  <Link 
+                    to="/cache" 
+                    onClick={closeMobileMenu}
+                    className="block text-gray-300 hover:text-white py-3 px-3 rounded-md hover:bg-gray-700 transition-colors font-medium"
+                  >
+                    Cache
+                  </Link>
+                )}
                 <button
                   onClick={handleLogout}
                   className="block w-full text-left text-gray-300 hover:text-white py-3 px-3 rounded-md hover:bg-gray-700 transition-colors font-medium"
