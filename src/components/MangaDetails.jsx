@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MangaReaderModal from './MangaReaderModal.jsx';
 import { useAuth } from './Auth/AuthContext.jsx';
@@ -34,6 +34,7 @@ function normalizeDateString(dateStr) {
 
 const MangaDetails = () => {
   const { id, source } = useParams();
+  const navigate = useNavigate();
   const { authFetch, isAuthenticated } = useAuth();
   const [manga, setManga] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +48,18 @@ const MangaDetails = () => {
   const [cacheInfo, setCacheInfo] = useState(null);
   const [chapterSortOrder, setChapterSortOrder] = useState('newest'); // 'newest', 'oldest'
   const [readChapters, setReadChapters] = useState(new Set()); // Track read chapters
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const fetchMangaDetails = async () => {
@@ -198,8 +211,16 @@ const MangaDetails = () => {
   if (error) {
     return (
       <div className="max-w-6xl mx-auto p-6">
-        <Link to="/" className="mb-6 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block">
-          ← Back to Search
+        <Link to="/" className={`mb-6 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block ${
+          isMobile ? 'p-2' : 'px-4 py-2'
+        }`}>
+          {isMobile ? (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            '← Back to Search'
+          )}
         </Link>
         <div className="p-4 bg-red-900 border border-red-600 text-red-200 rounded-lg">
           {error}
@@ -211,8 +232,16 @@ const MangaDetails = () => {
   if (!manga) {
     return (
       <div className="max-w-6xl mx-auto p-6">
-        <Link to="/" className="mb-6 px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block">
-          ← Back to Search
+        <Link to="/" className={`mb-6 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block ${
+          isMobile ? 'p-2' : 'px-4 py-2'
+        }`}>
+          {isMobile ? (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            '← Back to Search'
+          )}
         </Link>
         <div className="p-4 bg-red-900 border border-red-600 text-red-200 rounded-lg">
           Manga not found
@@ -224,8 +253,16 @@ const MangaDetails = () => {
   return (
     <div className="max-w-6xl mx-auto p-6">
       <div className="flex items-center justify-between mb-6">
-        <Link to="/" className="px-4 py-2 bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block">
-          ← Back to Search
+        <Link to="/" className={`bg-gray-700 text-gray-200 rounded-lg hover:bg-gray-600 transition-colors inline-block ${
+          isMobile ? 'p-2' : 'px-4 py-2'
+        }`}>
+          {isMobile ? (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          ) : (
+            '← Back to Search'
+          )}
         </Link>
         
         <div className="flex items-center space-x-4">
