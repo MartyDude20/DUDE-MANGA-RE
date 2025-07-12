@@ -6,6 +6,7 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
   const [showControls, setShowControls] = useState(true);
   const [viewMode, setViewMode] = useState('vertical');
   const [currentPage, setCurrentPage] = useState(0);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // Track current image in vertical mode
   const [imagesLoaded, setImagesLoaded] = useState(false);
   const [imagesError, setImagesError] = useState(false);
   const [loadedImages, setLoadedImages] = useState([]);
@@ -13,6 +14,7 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
   useEffect(() => {
     if (!open) return;
     setCurrentPage(0);
+    setCurrentImageIndex(0);
     setViewMode('vertical');
     setImagesLoaded(false);
     setImagesError(false);
@@ -74,6 +76,53 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
     setCurrentPage((prev) => Math.max(prev - decrement, 0));
   }, [viewMode]);
 
+  // Navigation for vertical mode - scroll to next/previous image
+  const nextVertical = useCallback(() => {
+    console.log('Next button clicked, viewMode:', viewMode, 'currentImageIndex:', currentImageIndex);
+    if (viewMode === 'vertical') {
+      if (currentImageIndex < loadedImages.length - 1) {
+        const newIndex = currentImageIndex + 1;
+        setCurrentImageIndex(newIndex);
+        
+        // Scroll to the specific image
+        setTimeout(() => {
+          const imageElements = document.querySelectorAll('.manga-page-image');
+          if (imageElements[newIndex]) {
+            imageElements[newIndex].scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+          }
+        }, 100);
+      }
+    } else {
+      nextPage();
+    }
+  }, [viewMode, nextPage, currentImageIndex, loadedImages.length]);
+
+  const prevVertical = useCallback(() => {
+    console.log('Previous button clicked, viewMode:', viewMode, 'currentImageIndex:', currentImageIndex);
+    if (viewMode === 'vertical') {
+      if (currentImageIndex > 0) {
+        const newIndex = currentImageIndex - 1;
+        setCurrentImageIndex(newIndex);
+        
+        // Scroll to the specific image
+        setTimeout(() => {
+          const imageElements = document.querySelectorAll('.manga-page-image');
+          if (imageElements[newIndex]) {
+            imageElements[newIndex].scrollIntoView({ 
+              behavior: 'smooth', 
+              block: 'start' 
+            });
+          }
+        }, 100);
+      }
+    } else {
+      prevPage();
+    }
+  }, [viewMode, prevPage, currentImageIndex]);
+
   // Keyboard navigation
   const handleKeyPress = useCallback(
     (e) => {
@@ -95,24 +144,16 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
           break;
         case 'ArrowRight':
         case ' ':
-          if (viewMode === 'vertical') {
-            window.scrollBy(0, window.innerHeight * 0.8);
-          } else {
-            nextPage();
-          }
+          nextVertical();
           break;
         case 'ArrowLeft':
-          if (viewMode === 'vertical') {
-            window.scrollBy(0, -window.innerHeight * 0.8);
-          } else {
-            prevPage();
-          }
+          prevVertical();
           break;
         default:
           break;
       }
     },
-    [open, onClose, viewMode, nextPage, prevPage]
+    [open, onClose, viewMode, nextVertical, prevVertical]
   );
 
   useEffect(() => {
@@ -120,6 +161,32 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
     document.addEventListener('keydown', handleKeyPress);
     return () => document.removeEventListener('keydown', handleKeyPress);
   }, [open, handleKeyPress]);
+
+  // Track current image when scrolling manually in vertical mode
+  useEffect(() => {
+    if (!open || viewMode !== 'vertical' || !loadedImages.length) return;
+
+    const handleScroll = () => {
+      const imageElements = document.querySelectorAll('.manga-page-image');
+      const scrollTop = window.scrollY;
+      const windowHeight = window.innerHeight;
+      
+      let currentIndex = 0;
+      for (let i = 0; i < imageElements.length; i++) {
+        const rect = imageElements[i].getBoundingClientRect();
+        if (rect.top <= windowHeight / 2) {
+          currentIndex = i;
+        }
+      }
+      
+      if (currentIndex !== currentImageIndex) {
+        setCurrentImageIndex(currentIndex);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [open, viewMode, loadedImages.length, currentImageIndex]);
 
   if (!open) return null;
 
@@ -154,7 +221,7 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
             <img
               src={src}
               alt={`chapter page ${idx + 1}`}
-              className="max-w-full mx-auto"
+              className="manga-page-image max-w-full mx-auto"
               loading="lazy"
             />
           </div>
@@ -195,6 +262,85 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
 
   return (
     <div className="fixed inset-0 bg-black z-50 overflow-auto">
+      {/* Left Navigation Button */}
+      <button
+        onClick={() => {
+          console.log('Left button clicked');
+          prevVertical();
+        }}
+        className="fixed left-4 top-1/2 transform -translate-y-1/2 z-20 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all duration-200 hover:scale-110 cursor-pointer"
+        title="Previous Page (←)"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+
+      {/* Right Navigation Button */}
+      <button
+        onClick={() => {
+          console.log('Right button clicked');
+          nextVertical();
+        }}
+        className="fixed right-4 top-1/2 transform -translate-y-1/2 z-20 bg-black bg-opacity-50 hover:bg-opacity-70 text-white rounded-full p-3 transition-all duration-200 hover:scale-110 cursor-pointer"
+        title="Next Page (→ or Space)"
+      >
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </button>
+
+      {/* Back to Top Button */}
+      <button
+        onClick={() => {
+          console.log('Back to top clicked');
+          console.log('Current scroll position:', window.scrollY);
+          console.log('View mode:', viewMode);
+          
+          // Try multiple scroll methods
+          try {
+            // Method 1: Scroll to top of window
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            // Method 2: Also try scrolling the container
+            const container = document.querySelector('.fixed.inset-0.bg-black.z-50.overflow-auto');
+            if (container) {
+              container.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            
+            // Reset image index
+            setCurrentImageIndex(0);
+            console.log('Back to top executed');
+          } catch (error) {
+            console.error('Back to top error:', error);
+            // Fallback: instant scroll
+            window.scrollTo(0, 0);
+          }
+        }}
+        className="fixed right-4 bottom-4 z-30 bg-red-600 bg-opacity-90 hover:bg-opacity-100 text-white rounded-full p-3 transition-all duration-200 hover:scale-110 cursor-pointer shadow-lg"
+        title="Back to Top"
+      >
+        <div className="flex flex-col items-center">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+          <span className="text-xs mt-1">TOP</span>
+        </div>
+      </button>
+
+      {/* Show Controls Button (when controls are hidden) */}
+      {!showControls && (
+        <div className="fixed top-4 right-4 z-20">
+          <button
+            onClick={() => setShowControls(true)}
+            className="px-3 py-2 bg-black bg-opacity-75 text-white rounded hover:bg-opacity-90 transition-all duration-200 cursor-pointer"
+            title="Show Controls"
+          >
+            Show Controls
+          </button>
+        </div>
+      )}
+
       {showControls && (
         <div className="fixed top-0 left-0 right-0 bg-black bg-opacity-75 text-white p-4 z-10">
           <div className="flex items-center justify-between mb-4">
@@ -231,45 +377,17 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
             />
           </div>
           
-          <div className="flex items-center justify-between">
-            <div className="flex space-x-2">
-              <button
-                className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
-                onClick={() => setShowControls((prev) => !prev)}
-                title="Toggle Controls (H)"
-              >
-                Hide Controls
-              </button>
-              <button
-                className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
-                onClick={() => setViewMode((prev) => {
-                  const idx = MODES.indexOf(prev);
-                  return MODES[(idx + 1) % MODES.length];
-                })}
-                title="Change View Mode (V)"
-              >
-                Change Mode
-              </button>
-            </div>
-            
-            <div className="flex space-x-2">
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={prevPage}
-                disabled={currentPage === 0}
-                title="Previous Page (←)"
-              >
-                &#8592;
-              </button>
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                onClick={nextPage}
-                disabled={currentPage >= totalPages - (viewMode === 'double' ? 2 : 1)}
-                title="Next Page (→ or Space)"
-              >
-                &#8594;
-              </button>
-            </div>
+          <div className="flex items-center justify-center">
+            <button
+              className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 transition-colors text-sm"
+              onClick={() => setViewMode((prev) => {
+                const idx = MODES.indexOf(prev);
+                return MODES[(idx + 1) % MODES.length];
+              })}
+              title="Change View Mode (V)"
+            >
+              Change Mode
+            </button>
           </div>
         </div>
       )}
