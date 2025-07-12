@@ -58,7 +58,7 @@ const MangaCard = ({ manga }) => {
         <img
           src={manga.image}
           alt={manga.title}
-          className="w-full h-48 object-cover"
+          className="w-full h-80 object-cover"
           onError={handleImageError}
         />
         <span className="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded text-xs font-semibold">
@@ -87,17 +87,7 @@ const MangaCard = ({ manga }) => {
         </button>
       </div>
       <div className="p-4">
-        <h3 className="font-medium text-white mb-2 line-clamp-2">{manga.title}</h3>
-        {manga.status && (
-          <div className="text-sm text-gray-300 mb-1">
-            <span className="font-medium">Status:</span> {manga.status}
-          </div>
-        )}
-        {manga.chapter && (
-          <div className="text-sm text-gray-400">
-            <span className="font-medium">Chapter:</span> {manga.chapter}
-          </div>
-        )}
+        <h3 className="text-xl font-semibold text-white text-center">{manga.title}</h3>
       </div>
     </Link>
   );

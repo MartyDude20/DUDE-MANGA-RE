@@ -4,7 +4,7 @@ import MangaCard from './MangaCard.jsx';
 
 const SavedManga = () => {
   const [savedManga, setSavedManga] = useState([]);
-  const [sortBy, setSortBy] = useState('savedAt'); // 'savedAt', 'title', 'source'
+  const [sortBy, setSortBy] = useState('savedAt'); // 'savedAt', 'title', 'source', 'lastRead'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
   const [filterSource, setFilterSource] = useState('all');
 
@@ -40,6 +40,12 @@ const SavedManga = () => {
           break;
         case 'source':
           comparison = a.source.localeCompare(b.source);
+          break;
+        case 'lastRead':
+          // Get last read time from localStorage or use savedAt as fallback
+          const aLastRead = localStorage.getItem(`lastRead_${a.source}_${a.id}`) || a.savedAt;
+          const bLastRead = localStorage.getItem(`lastRead_${b.source}_${b.id}`) || b.savedAt;
+          comparison = new Date(aLastRead) - new Date(bLastRead);
           break;
         case 'savedAt':
         default:
@@ -144,6 +150,7 @@ const SavedManga = () => {
                   className="px-3 py-1 bg-gray-700 text-white rounded border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="savedAt">Date Saved</option>
+                  <option value="lastRead">Last Read</option>
                   <option value="title">Title</option>
                   <option value="source">Source</option>
                 </select>

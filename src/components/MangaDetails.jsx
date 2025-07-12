@@ -74,6 +74,9 @@ const MangaDetails = () => {
         setManga(response.data);
         setCacheInfo(response.data.cached);
         
+        // Track manga access
+        trackMangaAccess();
+        
         // Check if manga is saved
         const savedManga = JSON.parse(localStorage.getItem('savedManga') || '[]');
         const isMangaSaved = savedManga.some(saved => 
@@ -101,6 +104,12 @@ const MangaDetails = () => {
     const mangaKey = `${source}-${id}`;
     const chapters = readChaptersData[mangaKey] || [];
     setReadChapters(new Set(chapters));
+  };
+
+  // Track manga access (last read)
+  const trackMangaAccess = () => {
+    const lastReadKey = `lastRead_${source}_${id}`;
+    localStorage.setItem(lastReadKey, new Date().toISOString());
   };
 
   // Save read chapter to localStorage
