@@ -1,0 +1,156 @@
+{
+  "timestamp": "2025-07-11T12:10:27.486640",
+  "without_preloader": {
+    "results": [
+      {
+        "query": "The Demonic Cult Instructor Returns",
+        "duration": 12.637896060943604,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "The Great Mage Returns After 4000 Years",
+        "duration": 11.459368705749512,
+        "manga_count": 3,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Nano Machine",
+        "duration": 12.541110515594482,
+        "manga_count": 3,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Return of the Apocalypse-Class Death Knight",
+        "duration": 11.071866273880005,
+        "manga_count": 1,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Eternally Regressing Knight",
+        "duration": 11.100492238998413,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Revenge of the Iron-Blooded Sword Hound",
+        "duration": 11.222452640533447,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Swordmaster's Youngest Son",
+        "duration": 12.822452783584595,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "The Greatest Estate Developer",
+        "duration": 11.466749429702759,
+        "manga_count": 3,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Dragon-Devouring Mage",
+        "duration": 12.312008380889893,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      }
+    ],
+    "avg_time": 11.848266336652967,
+    "total_manga": 20,
+    "total_cached": 0,
+    "cache_hit_rate": 0.0
+  },
+  "with_preloader": {
+    "results": [
+      {
+        "query": "The Demonic Cult Instructor Returns",
+        "duration": 11.138561010360718,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "The Great Mage Returns After 4000 Years",
+        "duration": 10.86770248413086,
+        "manga_count": 3,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Nano Machine",
+        "duration": 11.299914360046387,
+        "manga_count": 3,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Return of the Apocalypse-Class Death Knight",
+        "duration": 14.161624193191528,
+        "manga_count": 1,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Eternally Regressing Knight",
+        "duration": 11.53121829032898,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Revenge of the Iron-Blooded Sword Hound",
+        "duration": 11.238567590713501,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Swordmaster's Youngest Son",
+        "duration": 12.122409343719482,
+        "manga_count": 2,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "The Greatest Estate Developer",
+        "duration": 11.15512728691101,
+        "manga_count": 3,
+        "cached_count": 0,
+        "success": true
+      },
+      {
+        "query": "Dragon-Devouring Mage",
+        "duration": 10.864664316177368,
+        "manga_count": 2,
+        "cached_count": 1,
+        "success": true
+      }
+    ],
+    "avg_time": 11.597754319508871,
+    "total_manga": 20,
+    "total_cached": 1,
+    "cache_hit_rate": 5.0
+  },
+  "test_queries": [
+    "The Demonic Cult Instructor Returns",
+    "The Great Mage Returns After 4000 Years",
+    "Nano Machine",
+    "Return of the Apocalypse-Class Death Knight",
+    "Eternally Regressing Knight",
+    "Revenge of the Iron-Blooded Sword Hound",
+    "Swordmaster's Youngest Son",
+    "The Greatest Estate Developer",
+    "Dragon-Devouring Mage"
+  ]
+}

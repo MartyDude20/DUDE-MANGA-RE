@@ -1,115 +1,19 @@
 from playwright.sync_api import Page
 import re
-from difflib import SequenceMatcher
 
 def extract_manga_id_from_url(url):
     # AsuraScans URLs look like series/series-slug or /series/series-slug
     match = re.search(r'series/([^/]+)', url)
     return match.group(1) if match else None
 
-def handle_ads_and_popups(page: Page):
-    """Handle common ad popups and overlays that might block content"""
-    try:
-        # Wait a bit for page to load
-        page.wait_for_load_state('networkidle')
-        
-        # Common ad popup selectors to close
-        ad_selectors = [
-            'button[aria-label="Close"]',
-            'button.close',
-            '.close',
-            '[class*="close"]',
-            '[class*="Close"]',
-            '[id*="close"]',
-            '[id*="Close"]',
-            '.modal-close',
-            '.popup-close',
-            '.ad-close',
-            '.overlay-close',
-            'button[class*="dismiss"]',
-            'button[class*="Dismiss"]',
-            '.dismiss',
-            '.Dismiss',
-            '[class*="dismiss"]',
-            '[class*="Dismiss"]',
-            'button[class*="skip"]',
-            'button[class*="Skip"]',
-            '.skip',
-            '.Skip',
-            '[class*="skip"]',
-            '[class*="Skip"]'
-        ]
-        
-        # Try to close any visible popups
-        for selector in ad_selectors:
-            try:
-                elements = page.query_selector_all(selector)
-                for element in elements:
-                    if element.is_visible():
-                        element.click()
-                        print(f"AsuraScans: Closed popup with selector: {selector}")
-                        page.wait_for_timeout(500)  # Wait a bit after closing
-            except Exception as e:
-                continue
-        
-        # Try to click on the page to dismiss any overlays
-        try:
-            page.click('body', position={'x': 100, 'y': 100})
-            page.wait_for_timeout(500)
-        except:
-            pass
-        
-        # Handle any remaining overlays by pressing Escape
-        try:
-            page.keyboard.press('Escape')
-            page.wait_for_timeout(500)
-        except:
-            pass
-            
-    except Exception as e:
-        print(f"AsuraScans: Error handling ads/popups: {e}")
-
-def fuzzy_best_match(query, results):
-    """Return the result with the highest fuzzy match to the query title."""
-    best_score = 0
-    best_result = None
-    for result in results:
-        title = result.get('title', '')
-        score = SequenceMatcher(None, query.lower(), title.lower()).ratio()
-        if score > best_score:
-            best_score = score
-            best_result = result
-    # Only return if above a reasonable threshold (e.g., 0.7)
-    return best_result if best_score > 0.7 else None
-
-def search(page: Page, query: str, fuzzy=True):
+def search(page: Page, query: str):
     search_url = f"https://asuracomic.net/series?page=1&name={query}"
     page.goto(search_url)
-    
-    # Handle ads and popups before trying to extract content
-    handle_ads_and_popups(page)
-    
+    page.wait_for_load_state('networkidle')
     results = []
     # Each manga card is an <a href^="series/"> inside the grid
     cards = page.query_selector_all('a[href^="series/"]')
     print(f"AsuraScans: found {len(cards)} cards for query '{query}'")
-    
-    # If no cards found, try alternative selectors
-    if not cards:
-        print("AsuraScans: No cards found with 'a[href^=\"series/\"]', trying alternatives...")
-        alternative_selectors = [
-            'a[href*="/series/"]',
-            'a[href*="series"]',
-            '[href*="/series/"]',
-            '[href*="series"]'
-        ]
-        
-        for selector in alternative_selectors:
-            cards = page.query_selector_all(selector)
-            if cards:
-                print(f"AsuraScans: Found {len(cards)} cards with selector: {selector}")
-                break
-    
     for card in cards:
         try:
             link = card.get_attribute('href')
@@ -120,35 +24,6 @@ def search(page: Page, query: str, fuzzy=True):
             # Title (use span.text-[13.3px].block for most specific selection)
             title_elem = card.query_selector('span.text-\[13\.3px\].block')
             title = title_elem.inner_text().strip() if title_elem else None
-            # If title not found, try alternative selectors
-            if not title:
-                alt_title_selectors = [
-                    'span.block',
-                    'span',
-                    'h3',
-                    'h2',
-                    'div[class*="title"]',
-                    'div[class*="name"]',
-                    'img[alt]',
-                    '[alt]'
-                ]
-                for selector in alt_title_selectors:
-                    alt_elem = card.query_selector(selector)
-                    if alt_elem:
-                        if selector in ['img[alt]', '[alt]']:
-                            text = alt_elem.get_attribute('alt')
-                        else:
-                            text = alt_elem.inner_text().strip()
-                        if text and len(text) > 0 and text.lower() != 'none':
-                            title = text
-                            break
-                # If still no title, try to extract from URL
-                if not title and link:
-                    url_parts = link.split('/')
-                    if len(url_parts) >= 2:
-                        potential_title = url_parts[-1].replace('-', ' ').title()
-                        if potential_title and len(potential_title) > 3:
-                            title = potential_title
             # Chapter (regex-based extraction using page.locator)
             chapter = ''
             try:
@@ -157,29 +32,103 @@ def search(page: Page, query: str, fuzzy=True):
                     chapter = chapter_span.first.inner_text().replace('Chapter', '').strip()
             except Exception as e:
                 print(f"AsuraScans chapter regex error: {e}")
-            # Only add results with valid titles
-            if title and title.lower() != 'none':
-                results.append({
-                    'id': manga_id,
-                    'title': title,
-                    'status': '',
-                    'chapter': chapter,
-                    'image': image_url,
-                    'details_url': link,
-                    'source': 'asurascans'
-                })
-            else:
-                print(f"AsuraScans: Skipping result with invalid title: '{title}' for URL: {link}")
+            results.append({
+                'id': manga_id,
+                'title': title,
+                'status': '',
+                'chapter': chapter,
+                'image': image_url,
+                'details_url': link,
+                'source': 'asurascans'
+            })
         except Exception as e:
             print(f"AsuraScans error: {e}")
             continue
     print(f"AsuraScans: returning {len(results)} results for query '{query}'")
-    if fuzzy and results:
-        best = fuzzy_best_match(query, results)
-        if best:
-            print(f"AsuraScans: Fuzzy best match for '{query}' is '{best['title']}'")
-            return [best]
     return results
+
+def get_all_manga_from_pagination(page: Page, max_pages: int = 100):
+    """
+    Get all manga from AsuraScans by crawling through pagination
+    Returns a list of all manga found across all pages
+    """
+    all_manga = []
+    page_number = 1
+    
+    print(f"AsuraScans: Starting pagination crawl (max {max_pages} pages)")
+    
+    while page_number <= max_pages:
+        try:
+            # Navigate to the series page without search query
+            pagination_url = f"https://asuracomic.net/series?page={page_number}"
+            print(f"AsuraScans: Crawling page {page_number}: {pagination_url}")
+            
+            page.goto(pagination_url)
+            page.wait_for_load_state('networkidle')
+            
+            # Get all manga cards on this page
+            cards = page.query_selector_all('a[href^="series/"]')
+            
+            if not cards:
+                print(f"AsuraScans: No more manga found on page {page_number}, stopping pagination")
+                break
+            
+            print(f"AsuraScans: Found {len(cards)} manga on page {page_number}")
+            
+            page_manga = []
+            for card in cards:
+                try:
+                    link = card.get_attribute('href')
+                    manga_id = extract_manga_id_from_url(link) if link else None
+                    
+                    # Image
+                    img_elem = card.query_selector('img')
+                    image_url = img_elem.get_attribute('src') if img_elem else None
+                    
+                    # Title (use span.text-[13.3px].block for most specific selection)
+                    title_elem = card.query_selector('span.text-\[13\.3px\].block')
+                    title = title_elem.inner_text().strip() if title_elem else None
+                    
+                    # Chapter (regex-based extraction using page.locator)
+                    chapter = ''
+                    try:
+                        chapter_span = page.locator(f'a[href="{link}"] span', has_text=re.compile(r'Chapter'))
+                        if chapter_span.count() > 0:
+                            chapter = chapter_span.first.inner_text().replace('Chapter', '').strip()
+                    except Exception as e:
+                        print(f"AsuraScans chapter regex error: {e}")
+                    
+                    if manga_id and title:  # Only add if we have valid data
+                        page_manga.append({
+                            'id': manga_id,
+                            'title': title,
+                            'status': '',
+                            'chapter': chapter,
+                            'image': image_url,
+                            'details_url': link,
+                            'source': 'asurascans'
+                        })
+                except Exception as e:
+                    print(f"AsuraScans error processing card: {e}")
+                    continue
+            
+            # Add manga from this page to total results
+            all_manga.extend(page_manga)
+            print(f"AsuraScans: Added {len(page_manga)} manga from page {page_number}")
+            
+            # Check if we've seen this page before (duplicate detection)
+            if len(page_manga) == 0:
+                print(f"AsuraScans: No valid manga found on page {page_number}, stopping pagination")
+                break
+            
+            page_number += 1
+            
+        except Exception as e:
+            print(f"AsuraScans error on page {page_number}: {e}")
+            break
+    
+    print(f"AsuraScans: Pagination crawl complete. Total manga found: {len(all_manga)}")
+    return all_manga
 
 def get_details(page: Page, manga_id: str):
     manga_url = f"https://asuracomic.net/series/{manga_id}"

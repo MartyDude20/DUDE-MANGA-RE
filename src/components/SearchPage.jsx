@@ -175,18 +175,29 @@ const SearchPage = () => {
         }`}>
           <div className="flex items-center space-x-2">
             {cacheInfo ? (
+              <>
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
+                <span>Results loaded from cache</span>
+                {results.some(r => r.cached === true) && results.some(r => r.cached === false) && (
+                  <span className="text-sm ml-2">(mixed: some from preloader, some fresh)</span>
+                )}
+              </>
             ) : (
+              <>
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
               </svg>
+                <span>Fresh results loaded</span>
+              </>
             )}
-            <span>
-              {cacheInfo ? 'Results loaded from cache' : 'Fresh results loaded'}
-            </span>
           </div>
+          {results.length > 0 && results[0].last_updated && (
+            <div className="text-xs mt-1 opacity-75">
+              Data last updated: {new Date(results[0].last_updated).toLocaleString()}
+            </div>
+          )}
         </div>
       )}
 

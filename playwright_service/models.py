@@ -41,3 +41,36 @@ class ReadHistory(db.Model):
     manga_id = db.Column(db.String(128), nullable=False)
     chapter_url = db.Column(db.String(255), nullable=False)
     read_at = db.Column(db.DateTime, default=datetime.utcnow) 
+
+class PreloadedManga(db.Model):
+    """Model for storing preloaded manga data for instant search results"""
+    __tablename__ = 'preloaded_manga'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(255), nullable=False, index=True)
+    normalized_title = db.Column(db.String(255), nullable=False, index=True)  # For case-insensitive search
+    source_url = db.Column(db.String(512), unique=True, nullable=False)
+    cover_url = db.Column(db.String(512))
+    description = db.Column(db.Text)
+    chapters = db.Column(db.JSON)  # Store chapters as JSON
+    source = db.Column(db.String(64), nullable=False, index=True)
+    author = db.Column(db.String(255))
+    status = db.Column(db.Text)
+    popularity = db.Column(db.Integer, default=0)
+    last_accessed = db.Column(db.DateTime)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Create composite index for faster searches
+    __table_args__ = (
+        db.Index('idx_manga_source_updated', 'source', 'last_updated'),
+        db.Index('idx_manga_title_source', 'normalized_title', 'source'),
+    )
+    
+    def __repr__(self):
+        return f'<PreloadedManga {self.title} from {self.source}>'
+    
+    @staticmethod
+    def normalize_title(title):
+        """Normalize title for case-insensitive search"""
+        return title.strip().lower() if title else '' 
