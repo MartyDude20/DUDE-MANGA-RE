@@ -175,7 +175,8 @@ def init_auth(app):
             'user': {
                 'id': user.id,
                 'username': user.username,
-                'email': user.email
+                'email': user.email,
+                'hasAdmin': user.hasAdmin
             },
             'access_token': access_token
         })
@@ -262,5 +263,6 @@ def init_auth(app):
             'id': user.id,
             'username': user.username,
             'email': user.email,
+            'hasAdmin': user.hasAdmin,
             'created_at': user.created_at.isoformat()
         }) 

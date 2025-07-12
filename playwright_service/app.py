@@ -13,7 +13,7 @@ from sources.weebcentral import weebcentral_chapter_bp
 from cache_manager import CacheManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt, check_password_hash, generate_password_hash
-from models import db, User, PasswordResetToken, ReadHistory
+from models import db, User, PasswordResetToken, ReadHistory, PreloadJob, PreloadStats, RobotsTxtCache
 from auth import init_auth, auth_manager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -21,6 +21,7 @@ from functools import wraps
 import secrets
 from datetime import datetime, timedelta
 from email_config import init_email, send_password_reset_email, send_password_reset_success_email
+from preload_manager import PreloadManager
 
 # Import simple search service
 from services.simple_search import simple_search_service
@@ -61,6 +62,9 @@ app.register_blueprint(mangadex.mangadex_chapter_bp)
 
 # Initialize cache manager
 cache_manager = CacheManager()
+
+# Initialize preload manager
+preload_manager = PreloadManager(cache_manager)
 
 # Config: enable/disable sources
 ENABLED_SOURCES = {
@@ -602,6 +606,127 @@ def get_read_history():
             'read_at': h.read_at
         } for h in history
     ])
+
+# --- PRELOADING ENDPOINTS ---
+@app.route('/preload/stats', methods=['GET'])
+@admin_required
+def get_preload_stats():
+    """Get preload statistics for the last 7 days"""
+    days = request.args.get('days', 7, type=int)
+    stats = preload_manager.get_preload_stats(days)
+    return jsonify(stats)
+
+@app.route('/preload/jobs', methods=['GET'])
+@admin_required
+def get_preload_jobs():
+    """Get current preload jobs"""
+    status = request.args.get('status', None)
+    source = request.args.get('source', None)
+    
+    query = PreloadJob.query
+    
+    if status:
+        query = query.filter(PreloadJob.status == status)
+    if source:
+        query = query.filter(PreloadJob.source == source)
+    
+    jobs = query.order_by(PreloadJob.scheduled_at.desc()).limit(50).all()
+    
+    return jsonify([{
+        'id': job.id,
+        'job_type': job.job_type,
+        'source': job.source,
+        'target_id': job.target_id,
+        'status': job.status,
+        'priority': job.priority,
+        'scheduled_at': job.scheduled_at.isoformat() if job.scheduled_at else None,
+        'started_at': job.started_at.isoformat() if job.started_at else None,
+        'completed_at': job.completed_at.isoformat() if job.completed_at else None,
+        'error_message': job.error_message,
+        'retry_count': job.retry_count
+    } for job in jobs])
+
+@app.route('/preload/create-daily', methods=['POST'])
+@admin_required
+def create_daily_preload():
+    """Create daily preload jobs"""
+    try:
+        jobs_created = preload_manager.create_daily_preload_jobs()
+        return jsonify({
+            'message': f'Created {jobs_created} daily preload jobs',
+            'jobs_created': jobs_created
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to create daily preload jobs: {str(e)}'}), 500
+
+@app.route('/preload/start-worker', methods=['POST'])
+@admin_required
+def start_preload_worker():
+    """Start the preload worker"""
+    try:
+        preload_manager.start_preload_worker()
+        return jsonify({'message': 'Preload worker started'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to start preload worker: {str(e)}'}), 500
+
+@app.route('/preload/stop-worker', methods=['POST'])
+@admin_required
+def stop_preload_worker():
+    """Stop the preload worker"""
+    try:
+        preload_manager.stop_preload_worker()
+        return jsonify({'message': 'Preload worker stopped'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to stop preload worker: {str(e)}'}), 500
+
+@app.route('/preload/cleanup', methods=['POST'])
+@admin_required
+def cleanup_preload_jobs():
+    """Clean up old preload jobs"""
+    try:
+        days = request.args.get('days', 7, type=int)
+        preload_manager.cleanup_old_jobs(days)
+        return jsonify({'message': f'Cleaned up preload jobs older than {days} days'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to cleanup preload jobs: {str(e)}'}), 500
+
+@app.route('/preload/update-robots', methods=['POST'])
+@admin_required
+def update_robots_txt():
+    """Update robots.txt cache for all sources"""
+    try:
+        preload_manager.update_robots_txt_all_sources()
+        return jsonify({'message': 'Updated robots.txt cache for all sources'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to update robots.txt: {str(e)}'}), 500
+
+@app.route('/preload/status', methods=['GET'])
+@admin_required
+def get_preload_status():
+    """Get preload system status"""
+    try:
+        # Get pending jobs count
+        pending_count = PreloadJob.query.filter(PreloadJob.status == 'pending').count()
+        running_count = PreloadJob.query.filter(PreloadJob.status == 'running').count()
+        completed_today = PreloadJob.query.filter(
+            PreloadJob.status == 'completed',
+            PreloadJob.completed_at >= datetime.utcnow().date()
+        ).count()
+        failed_today = PreloadJob.query.filter(
+            PreloadJob.status == 'failed',
+            PreloadJob.completed_at >= datetime.utcnow().date()
+        ).count()
+        
+        return jsonify({
+            'worker_running': preload_manager.running,
+            'pending_jobs': pending_count,
+            'running_jobs': running_count,
+            'completed_today': completed_today,
+            'failed_today': failed_today,
+            'total_jobs_today': completed_today + failed_today
+        })
+    except Exception as e:
+        return jsonify({'error': f'Failed to get preload status: {str(e)}'}), 500
 
 if __name__ == '__main__':
     port = int(os.getenv('PLAYWRIGHT_PORT', 5000))

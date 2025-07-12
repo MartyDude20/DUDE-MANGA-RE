@@ -164,38 +164,38 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
   } else if (viewMode === 'single') {
     content = (
       <div className="pt-16 pb-8 flex justify-center">
-        <img
-          src={loadedImages[currentPage]}
-          alt={`chapter page ${currentPage + 1}`}
+          <img
+            src={loadedImages[currentPage]}
+            alt={`chapter page ${currentPage + 1}`}
           className="max-w-full"
-          loading="lazy"
-        />
+            loading="lazy"
+          />
       </div>
     );
   } else if (viewMode === 'double') {
     content = (
       <div className="pt-16 pb-8 flex justify-center gap-4">
-        <img
-          src={loadedImages[currentPage]}
-          alt={`chapter page ${currentPage + 1}`}
-          className="max-w-[50%]"
-          loading="lazy"
-        />
-        {currentPage + 1 < loadedImages.length && (
           <img
-            src={loadedImages[currentPage + 1]}
-            alt={`chapter page ${currentPage + 2}`}
-            className="max-w-[50%]"
+            src={loadedImages[currentPage]}
+            alt={`chapter page ${currentPage + 1}`}
+          className="max-w-[50%]"
             loading="lazy"
           />
-        )}
+          {currentPage + 1 < loadedImages.length && (
+            <img
+              src={loadedImages[currentPage + 1]}
+              alt={`chapter page ${currentPage + 2}`}
+            className="max-w-[50%]"
+              loading="lazy"
+            />
+          )}
       </div>
     );
   }
 
   return (
     <div className="fixed inset-0 bg-black z-50 overflow-auto">
-      {showControls && (
+        {showControls && (
         <div className="fixed top-0 left-0 right-0 bg-black bg-opacity-75 text-white p-4 z-10">
           <div className="flex items-center justify-between mb-4">
             <button onClick={onClose} className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Close</button>
@@ -223,13 +223,13 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
             <button onClick={() => setShowControls((prev) => !prev)} className="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Hide UI (H)</button>
           </div>
           
-          {/* Progress bar */}
+            {/* Progress bar */}
           <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
-            <div
+              <div
               className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           
           <div className="flex items-center justify-between">
             <div className="flex space-x-2">
@@ -270,10 +270,10 @@ const MangaReaderModal = ({ open, images, onClose, chapterTitle, chapters = [], 
                 &#8594;
               </button>
             </div>
+            </div>
           </div>
-        </div>
-      )}
-      {content}
+        )}
+        {content}
     </div>
   );
 };

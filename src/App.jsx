@@ -7,6 +7,7 @@ import MangaDetails from './components/MangaDetails.jsx';
 import Sources from './components/Sources.jsx';
 import SavedManga from './components/SavedManga.jsx';
 import CacheManager from './components/CacheManager.jsx';
+import PreloadManager from './components/PreloadManager.jsx';
 import AuthPage from './components/Auth/AuthPage.jsx';
 import ForgotPassword from './components/Auth/ForgotPassword.jsx';
 import ResetPassword from './components/Auth/ResetPassword.jsx';
@@ -75,6 +76,7 @@ const AppContent = () => {
               <Route path="/saved" element={<SavedManga />} />
               <Route path="/sources" element={<Sources />} />
               <Route path="/cache" element={<ProtectedRoute><CacheManager /></ProtectedRoute>} />
+              <Route path="/preload" element={<ProtectedRoute><PreloadManager /></ProtectedRoute>} />
               <Route path="/manga/:source/:id" element={<MangaDetails />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/read-history" element={<ProtectedRoute><ReadHistory /></ProtectedRoute>} />
