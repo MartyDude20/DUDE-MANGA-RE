@@ -46,6 +46,7 @@ const MangaDetails = () => {
   const [forceRefresh, setForceRefresh] = useState(false);
   const [cacheInfo, setCacheInfo] = useState(null);
   const [chapterSortOrder, setChapterSortOrder] = useState('newest'); // 'newest', 'oldest'
+  const [readChapters, setReadChapters] = useState(new Set()); // Track read chapters
 
   useEffect(() => {
     const fetchMangaDetails = async () => {
@@ -66,6 +67,9 @@ const MangaDetails = () => {
           saved.id === id && saved.source === source
         );
         setIsSaved(isMangaSaved);
+        
+        // Load read chapters for this manga
+        loadReadChapters();
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to fetch manga details');
       } finally {
@@ -77,6 +81,28 @@ const MangaDetails = () => {
       fetchMangaDetails();
     }
   }, [id, source, forceRefresh]);
+
+  // Load read chapters from localStorage
+  const loadReadChapters = () => {
+    const readChaptersData = JSON.parse(localStorage.getItem('readChapters') || '{}');
+    const mangaKey = `${source}-${id}`;
+    const chapters = readChaptersData[mangaKey] || [];
+    setReadChapters(new Set(chapters));
+  };
+
+  // Save read chapter to localStorage
+  const saveReadChapter = (chapterUrl) => {
+    const readChaptersData = JSON.parse(localStorage.getItem('readChapters') || '{}');
+    const mangaKey = `${source}-${id}`;
+    const chapters = readChaptersData[mangaKey] || [];
+    
+    if (!chapters.includes(chapterUrl)) {
+      chapters.push(chapterUrl);
+      readChaptersData[mangaKey] = chapters;
+      localStorage.setItem('readChapters', JSON.stringify(readChaptersData));
+      setReadChapters(new Set(chapters));
+    }
+  };
 
   const handleImageError = (e) => {
     e.target.style.display = 'none';
@@ -136,6 +162,9 @@ const MangaDetails = () => {
     setReaderLoading(true);
     setReaderOpen(true);
     setReaderTitle(chapter.title);
+    
+    // Save chapter as read
+    saveReadChapter(chapter.url);
     
     // Record read history when chapter is opened
     await recordReadHistory(chapter);
@@ -347,18 +376,36 @@ const MangaDetails = () => {
               });
               return sortedChapters.map((chapter, idx) => {
                 const displayDate = chapter.date || chapter.extractedDate;
+                const isRead = readChapters.has(chapter.url);
                 return (
                   <div 
                     key={`${chapter.url}-${idx}`} 
-                    className="flex items-center justify-between p-4 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 cursor-pointer transition-colors"
+                    className={`flex items-center justify-between p-4 rounded-lg border cursor-pointer transition-colors ${
+                      isRead 
+                        ? 'bg-gray-900 border-gray-600 hover:bg-gray-800 opacity-60' 
+                        : 'bg-gray-800 border-gray-700 hover:bg-gray-700'
+                    }`}
                     onClick={e => handleChapterClick(e, chapter)}
                   >
-                    <div>
-                      <h3 className="font-medium text-white mb-1">{chapter.cleanTitle}</h3>
-                      <p className="text-sm text-gray-400">{chapter.number}</p>
+                    <div className="flex items-center">
+                      {isRead && (
+                        <svg className="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                      <div>
+                        <h3 className={`font-medium mb-1 ${isRead ? 'text-gray-400' : 'text-white'}`}>
+                          {chapter.cleanTitle}
+                        </h3>
+                        <p className={`text-sm ${isRead ? 'text-gray-500' : 'text-gray-400'}`}>
+                          {chapter.number}
+                        </p>
+                      </div>
                     </div>
-                    <span className="flex items-center min-w-[140px] justify-end text-sm text-gray-500">
-                      <svg className="w-4 h-4 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className={`flex items-center min-w-[140px] justify-end text-sm ${
+                      isRead ? 'text-gray-500' : 'text-gray-500'
+                    }`}>
+                      <svg className={`w-4 h-4 mr-1 ${isRead ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <rect x="3" y="4" width="18" height="18" rx="2" strokeWidth="2" stroke="currentColor" fill="none" />
                         <line x1="16" y1="2" x2="16" y2="6" strokeWidth="2" stroke="currentColor" />
                         <line x1="8" y1="2" x2="8" y2="6" strokeWidth="2" stroke="currentColor" />
@@ -386,6 +433,9 @@ const MangaDetails = () => {
           setReaderOpen(true);
           setReaderTitle(chapter.title);
           
+          // Save chapter as read
+          saveReadChapter(chapter.url);
+          
           // Record read history when chapter is opened
           await recordReadHistory(chapter);
           
@@ -404,14 +454,7 @@ const MangaDetails = () => {
         }}
       />
       
-      {readerOpen && readerLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="text-center text-white">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4">Loading pages...</p>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
