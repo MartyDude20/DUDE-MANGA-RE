@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getProxiedImageUrl } from '../utils/imageProxy.js';
 
 const sourceLabels = {
   weebcentral: 'WeebCentral',
@@ -16,10 +17,18 @@ const MangaCard = ({ manga }) => {
       saved.id === manga.id && saved.source === manga.source
     );
     setIsSaved(isMangaSaved);
+    
+    // Debug: Log image URL
+    console.log('MangaCard - Title:', manga.title, 'Image URL:', manga.image, 'Source:', manga.source);
   }, [manga.id, manga.source]);
 
   const handleImageError = (e) => {
-    e.target.style.display = 'none';
+    console.log('Image failed to load:', e.target.src);
+    console.log('Manga:', manga.title, 'Source:', manga.source);
+    // Show a placeholder image instead of hiding the image
+    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIwIiBoZWlnaHQ9IjMyMCIgdmlld0JveD0iMCAwIDMyMCAzMjAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIzMjAiIGhlaWdodD0iMzIwIiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik0xNjAgODBDMTI4IDgwIDEwMiAxMDYgMTAyIDEzOEMxMDIgMTcwIDEyOCAxOTYgMTYwIDE5NkMxOTIgMTk2IDIxOCAxNzAgMjE4IDEzOEMyMTggMTA2IDE5MiA4MCAxNjAgODBaIiBmaWxsPSIjNkI3MjgwIi8+CjxwYXRoIGQ9Ik0xNjAgMjE2QzE5MiAyMTYgMjE4IDI0MiAyMTggMjc0QzIxOCAzMDYgMTkyIDMzMiAxNjAgMzMyQzEyOCAzMzIgMTAyIDMwNiAxMDIgMjc0QzEwMiAyNDIgMTI4IDIxNiAxNjAgMjE2WiIgZmlsbD0iIzZCNzI4MCIvPgo8L3N2Zz4K';
+    e.target.alt = 'Image not available';
+    e.target.className = 'w-full h-80 object-cover opacity-50';
   };
 
   const handleSaveToggle = (e) => {
@@ -56,7 +65,7 @@ const MangaCard = ({ manga }) => {
     <Link to={`/manga/${manga.source}/${manga.id}`} className="bg-gray-800 rounded-lg shadow-sm border border-gray-700 overflow-hidden hover:shadow-md hover:border-gray-600 transition-all cursor-pointer group">
       <div className="relative">
         <img
-          src={manga.image}
+          src={getProxiedImageUrl(manga.image)}
           alt={manga.title}
           className="w-full h-80 object-cover"
           onError={handleImageError}

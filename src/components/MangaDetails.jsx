@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import MangaReaderModal from './MangaReaderModal.jsx';
+import ReadingListPopup from './ReadingListPopup.jsx';
 import { useAuth } from './Auth/AuthContext.jsx';
+import { getProxiedImageUrl } from '../utils/imageProxy.js';
 
 // Helper function to format date
 function formatDate(dateStr) {
@@ -49,6 +51,7 @@ const MangaDetails = () => {
   const [chapterSortOrder, setChapterSortOrder] = useState('newest'); // 'newest', 'oldest'
   const [readChapters, setReadChapters] = useState(new Set()); // Track read chapters
   const [isMobile, setIsMobile] = useState(false);
+  const [showReadingListPopup, setShowReadingListPopup] = useState(false);
 
   // Detect mobile device
   useEffect(() => {
@@ -127,7 +130,10 @@ const MangaDetails = () => {
   };
 
   const handleImageError = (e) => {
-    e.target.style.display = 'none';
+    // Show a placeholder image instead of hiding the image
+    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjU2IiBoZWlnaHQ9IjM4NCIgdmlld0JveD0iMCAwIDI1NiAzODQiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIyNTYiIGhlaWdodD0iMzg0IiBmaWxsPSIjMzc0MTUxIi8+CjxwYXRoIGQ9Ik0xMjggOTZDMTAyIDk2IDgyIDExNiA4MiAxNDJDMjIgMTQyIDI2IDE4MiA4MiAxODJDMTAyIDE4MiAxMjggMjAyIDEyOCAyMjJDMjggMjIyIDMyIDI2MiA4OCAyNjJDMTA4IDI2MiAxMzQgMjgyIDEzNCAzMDJDMzQgMzAyIDM4IDM0MiA5NCAzNDJDMjE0IDM0MiAyNTYgMzAyIDI1NiAyMjJDMjU2IDE0MiAxOTYgOTYgMTI4IDk2WiIgZmlsbD0iIzZCNzI4MCIvPgo8L3N2Zz4K';
+    e.target.alt = 'Cover image not available';
+    e.target.className = 'w-64 h-96 object-cover rounded-lg shadow-lg opacity-50';
   };
 
   const handleSaveToggle = () => {
@@ -310,6 +316,22 @@ const MangaDetails = () => {
               </>
             )}
           </button>
+          
+          <button
+            onClick={() => setShowReadingListPopup(true)}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center space-x-2 relative group"
+            title="Add manga to a reading list"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            <span>Add to List</span>
+            {/* Tooltip */}
+            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+              Add to reading list
+              <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+            </div>
+          </button>
         </div>
       </div>
       
@@ -338,7 +360,7 @@ const MangaDetails = () => {
 
       <div className="flex flex-col md:flex-row gap-6 mb-8 bg-gray-800 p-6 rounded-lg shadow-lg">
         <img
-          src={manga.image}
+          src={getProxiedImageUrl(manga.image)}
           alt={manga.title}
           className="w-64 h-96 object-cover rounded-lg shadow-lg"
           onError={handleImageError}
@@ -500,6 +522,14 @@ const MangaDetails = () => {
         }}
       />
       
+      <ReadingListPopup
+        isOpen={showReadingListPopup}
+        onClose={() => setShowReadingListPopup(false)}
+        manga={manga}
+        onSuccess={(listId) => {
+          console.log(`Manga added to list ${listId} successfully`);
+        }}
+      />
 
     </div>
   );

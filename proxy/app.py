@@ -419,6 +419,31 @@ def add_manga_to_list(list_id):
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to add manga to list: {str(e)}'}), 500
 
+@app.route('/api/proxy-image', methods=['GET'])
+def proxy_image():
+    """Proxy images to avoid CORS issues"""
+    try:
+        image_url = request.args.get('url')
+        if not image_url:
+            return jsonify({'error': 'No image URL provided'}), 400
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(image_url, headers=headers, stream=True, timeout=10)
+        response.raise_for_status()
+        
+        # Forward the response headers
+        headers_to_forward = {}
+        for header, value in response.headers.items():
+            if header.lower() in ['content-type', 'content-length', 'cache-control', 'etag', 'last-modified']:
+                headers_to_forward[header] = value
+        
+        return response.content, response.status_code, headers_to_forward
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to proxy image: {str(e)}'}), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('FLASK_PORT', 3006))
     app.run(host='0.0.0.0', port=port, debug=True) 

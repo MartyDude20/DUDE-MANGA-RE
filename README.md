@@ -1,164 +1,130 @@
-# Dude Manga
+# DUDE MANGA READER
 
-A modern web application for searching and discovering manga from WeebCentral. Built with React frontend, Flask proxy, and Playwright web scraping.
+A modern manga reader application with advanced features for organizing and reading manga from multiple sources.
 
 ## Features
 
-- 🔍 Search manga by title
-- 📱 Responsive dark mode UI
-- 🎨 Beautiful card-based layout
-- 📖 Detailed manga information
-- 🚀 Fast and efficient web scraping
+### Core Features
+- **Multi-Source Support**: Read manga from WeebCentral, Asura Scans, and MangaDex
+- **Advanced Search**: Search across all sources with intelligent caching
+- **Manga Reader**: High-quality image reader with zoom, navigation, and reading progress tracking
+- **User Authentication**: Secure login/register system with password reset functionality
+- **Reading Lists**: Create custom reading lists to organize your manga collection
+- **Reading Progress**: Track your progress across all manga with detailed statistics
+- **Offline Reading**: Download chapters for offline access (coming soon)
 
-## Architecture
+### Reading Lists Feature
+- **Create Custom Lists**: Organize manga into personalized reading lists
+- **Add to Lists**: Easily add manga to reading lists from the manga details page
+- **List Management**: Create, edit, and delete reading lists with custom colors and descriptions
+- **Quick Access**: View all your reading lists in one place
+- **Manga Count**: See how many manga are in each list
 
-- **Frontend**: React (Port 3005) - Modern UI with dark mode
-- **Proxy**: Flask (Port 3006) - API gateway and request handling
-- **Scraper**: Playwright (Port 5000) - Web scraping from WeebCentral
+### Enhanced Reader Features
+- **Zoom Controls**: 0.5x to 3x zoom with smooth transitions
+- **Reading Direction**: Toggle between LTR and RTL reading
+- **Auto-scroll**: Adjustable speed from 0.5x to 3x
+- **Night Mode**: Reduced brightness and contrast for comfortable reading
+- **Fullscreen**: Immersive reading mode
+- **UI Toggle**: Hide/show reader controls
+- **Reading Progress**: Automatic progress tracking and resume functionality
 
-## Prerequisites
+### Performance Features
+- **Smart Caching**: Intelligent caching system for faster loading
+- **Image Optimization**: Lazy loading and progressive image loading
+- **Background Preloading**: Preload chapters for seamless reading
+- **Performance Monitoring**: Real-time performance metrics and cache statistics
 
+## Quick Start
+
+### Prerequisites
+- Node.js 16+ and npm
 - Python 3.8+
-- Node.js 16+
-- npm or yarn
+- Required Python packages (see requirements.txt)
 
-## Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd DUDE-MANGA-RE
-   ```
-
-2. **Install Python dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Install Playwright browsers**
-   ```bash
-   playwright install chromium
-   ```
-
-4. **Install Node.js dependencies**
+### Installation
+1. Install frontend dependencies:
    ```bash
    npm install
    ```
 
-5. **Set up environment variables**
+2. Install backend dependencies:
    ```bash
-   cp env.example .env
-   ```
-   
-   Edit `.env` and add your Firecrawl API key:
-   ```
-   FIRECRAWL_API_KEY=your_firecrawl_api_key_here
-   FLASK_PORT=3006
-   PLAYWRIGHT_PORT=5000
-   REACT_PORT=3005
+   pip install -r requirements.txt
    ```
 
-## Running the Application
-
-### Option 1: Start all services at once
-```bash
-python start_services.py
-```
-
-### Option 2: Start services individually
-
-1. **Start Playwright service** (Terminal 1)
+3. Run database migration:
    ```bash
    cd playwright_service
-   python app.py
+   python migrate_database.py
    ```
 
-2. **Start Flask proxy** (Terminal 2)
-   ```bash
-   cd proxy
-   python app.py
-   ```
+### Starting the Services
+Use the provided startup script:
+```bash
+start_enhanced_services.bat
+```
 
-3. **Start React frontend** (Terminal 3)
-   ```bash
-   npm start
-   ```
+Or start manually:
+1. Backend: `cd playwright_service && python app.py`
+2. Proxy: `cd proxy && python app.py`
+3. Frontend: `npm run dev`
 
-## Usage
+### Access URLs
+- **Frontend**: http://localhost:5173
+- **Proxy**: http://localhost:3006
+- **Backend**: http://localhost:5000
 
-1. Open your browser and navigate to `http://localhost:3005`
-2. Use the search bar to find manga by title
-3. Click on any manga card to view detailed information
-4. Navigate back to search results using the "Back to Search" button
+## How to Use Reading Lists
+
+### Adding Manga to Reading Lists
+1. Navigate to any manga details page
+2. Click the "Add to List" button (green button with plus icon)
+3. Select an existing reading list or create a new one
+4. The manga will be added to your selected list
+
+### Creating New Reading Lists
+1. Click "Add to List" on any manga
+2. Click "New List" in the popup
+3. Enter a name, description, and choose a color
+4. Click "Create List" to save
+
+### Managing Reading Lists
+1. Navigate to the Reading Lists page from the main menu
+2. View all your created lists
+3. Click on any list to view its contents
+4. Edit or delete lists as needed
 
 ## API Endpoints
 
-### Flask Proxy (Port 3006)
-- `GET /api/search?q=<query>` - Search for manga
-- `GET /api/manga/<id>` - Get manga details
-- `GET /api/health` - Health check
+### Reading Lists
+- `GET /api/reading-lists` - Get user's reading lists
+- `POST /api/reading-lists` - Create new reading list
+- `POST /api/reading-lists/{id}/manga` - Add manga to list
 
-### Playwright Service (Port 5000)
-- `GET /search?q=<query>` - Search WeebCentral
-- `GET /manga/<id>` - Get manga details from WeebCentral
-- `GET /health` - Health check
+### Reading Progress
+- `GET /api/reading-progress` - Get user's reading progress
+- `POST /api/reading-progress` - Update reading progress
+- `GET /api/reading-progress/continue` - Get continue reading list
 
-## Project Structure
+## Architecture
 
-```
-DUDE-MANGA-RE/
-├── src/                    # React frontend source
-│   ├── components/         # React components
-│   ├── App.js             # Main app component
-│   ├── App.css            # Main styles
-│   └── index.js           # App entry point
-├── proxy/                  # Flask proxy service
-│   └── app.py             # Proxy server
-├── playwright_service/     # Playwright scraping service
-│   └── app.py             # Scraping server
-├── public/                 # Static files
-├── package.json           # Node.js dependencies
-├── requirements.txt       # Python dependencies
-├── start_services.py      # Service startup script
-└── README.md              # This file
-```
+### Frontend
+- **React 18** with Vite for fast development
+- **Tailwind CSS** for styling
+- **React Router** for navigation
+- **Axios** for API communication
 
-## Development
+### Backend
+- **Flask** with SQLAlchemy ORM
+- **PostgreSQL** database
+- **Playwright** for web scraping
+- **Redis** for caching (optional)
 
-### Frontend Development
-- The React app uses modern hooks and functional components
-- Styled with CSS custom properties for easy theming
-- Responsive design with mobile-first approach
-
-### Backend Development
-- Flask proxy handles CORS and request forwarding
-- Playwright service manages web scraping with headless browser
-- Error handling and logging throughout the stack
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Port already in use**
-   - Check if ports 3005, 3006, or 5000 are already occupied
-   - Kill existing processes or change ports in `.env`
-
-2. **Playwright browser issues**
-   - Run `playwright install chromium` to ensure browser is installed
-   - Check if you have sufficient system resources
-
-3. **API connection errors**
-   - Ensure all services are running
-   - Check firewall settings
-   - Verify environment variables are set correctly
-
-### Debug Mode
-
-To run services in debug mode, set the `DEBUG` environment variable:
-```bash
-export DEBUG=1
-python start_services.py
-```
+### Proxy
+- **Flask** proxy server for API routing
+- **CORS** handling
+- **Authentication** forwarding
 
 ## Contributing
 
@@ -170,19 +136,4 @@ python start_services.py
 
 ## License
 
-This project is for educational purposes. Please respect WeebCentral's terms of service and robots.txt when scraping their content.
-
-## Support
-
-For issues and questions, please open an issue on the repository. 
-
-
-## HOW TO ENTER PYTHON ENV
-
-venv\Scripts\Activate.ps1 
-
-dudemanga15!
-
-dudedude15!
-
-password123!
+This project is licensed under the MIT License.
