@@ -13,7 +13,7 @@ from sources.weebcentral import weebcentral_chapter_bp
 from cache_manager import CacheManager
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt, check_password_hash, generate_password_hash
-from models import db, User, PasswordResetToken, ReadHistory
+from models import db, User, PasswordResetToken, ReadHistory, ReadingProgress, ReadingList, ReadingListEntry, Notification, Bookmark, Note, MangaUpdate
 from auth import init_auth, auth_manager
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -591,7 +591,11 @@ def get_read_history():
     user = getattr(request, 'current_user', None)
     if not user:
         return jsonify({'error': 'Not authenticated'}), 401
-    history = ReadHistory.query.filter_by(user_id=user.id).order_by(ReadHistory.read_at.desc()).all()
+    
+    # Get limit parameter, default to 50 if not specified
+    limit = request.args.get('limit', type=int, default=50)
+    
+    history = ReadHistory.query.filter_by(user_id=user.id).order_by(ReadHistory.read_at.desc()).limit(limit).all()
     return jsonify([
         {
             'manga_title': h.manga_title,
@@ -599,7 +603,11 @@ def get_read_history():
             'source': h.source,
             'manga_id': h.manga_id,
             'chapter_url': h.chapter_url,
-            'read_at': h.read_at
+            'read_at': h.read_at,
+            'reading_time': h.reading_time,
+            'pages_read': h.pages_read,
+            'total_pages': h.total_pages,
+            'completion_percentage': h.completion_percentage
         } for h in history
     ])
 
@@ -622,6 +630,357 @@ def clear_read_history():
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to clear read history: {str(e)}'}), 500
+
+# --- READING PROGRESS ENDPOINTS ---
+@app.route('/reading-progress', methods=['GET'])
+@auth_manager.login_required
+def get_reading_progress():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    progress = ReadingProgress.query.filter_by(user_id=user.id).order_by(ReadingProgress.last_read_at.desc()).all()
+    return jsonify([
+        {
+            'id': p.id,
+            'manga_id': p.manga_id,
+            'source': p.source,
+            'manga_title': p.manga_title,
+            'current_chapter': p.current_chapter,
+            'current_page': p.current_page,
+            'total_pages_in_chapter': p.total_pages_in_chapter,
+            'chapters_read': p.chapters_read,
+            'total_chapters': p.total_chapters,
+            'completion_percentage': p.completion_percentage,
+            'started_at': p.started_at,
+            'last_read_at': p.last_read_at,
+            'completed_at': p.completed_at,
+            'total_reading_time': p.total_reading_time,
+            'average_reading_speed': p.average_reading_speed
+        } for p in progress
+    ])
+
+@app.route('/reading-progress/continue', methods=['GET'])
+@auth_manager.login_required
+def get_continue_reading():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Get manga that are in progress (not completed)
+    progress = ReadingProgress.query.filter_by(
+        user_id=user.id
+    ).filter(
+        ReadingProgress.completed_at.is_(None)
+    ).order_by(ReadingProgress.last_read_at.desc()).limit(5).all()
+    
+    return jsonify([
+        {
+            'manga_id': p.manga_id,
+            'source': p.source,
+            'manga_title': p.manga_title,
+            'current_chapter': p.current_chapter,
+            'current_page': p.current_page,
+            'completion_percentage': p.completion_percentage,
+            'last_read_at': p.last_read_at
+        } for p in progress
+    ])
+
+@app.route('/reading-progress', methods=['POST'])
+@auth_manager.login_required
+def update_reading_progress():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    manga_id = data.get('manga_id')
+    source = data.get('source')
+    manga_title = data.get('manga_title')
+    current_chapter = data.get('current_chapter')
+    current_page = data.get('current_page', 1)
+    total_pages_in_chapter = data.get('total_pages_in_chapter')
+    chapters_read = data.get('chapters_read', 0)
+    total_chapters = data.get('total_chapters')
+    reading_time = data.get('reading_time', 0)
+    
+    if not all([manga_id, source, manga_title]):
+        return jsonify({'error': 'manga_id, source, and manga_title are required'}), 400
+    
+    # Check if progress already exists
+    progress = ReadingProgress.query.filter_by(
+        user_id=user.id, 
+        manga_id=manga_id, 
+        source=source
+    ).first()
+    
+    if progress:
+        # Update existing progress
+        progress.current_chapter = current_chapter
+        progress.current_page = current_page
+        progress.total_pages_in_chapter = total_pages_in_chapter
+        progress.chapters_read = chapters_read
+        progress.total_chapters = total_chapters
+        progress.last_read_at = datetime.utcnow()
+        progress.total_reading_time += reading_time
+        
+        # Calculate completion percentage
+        if total_chapters and chapters_read:
+            progress.completion_percentage = (chapters_read / total_chapters) * 100
+            if progress.completion_percentage >= 100:
+                progress.completed_at = datetime.utcnow()
+        
+        # Calculate average reading speed
+        if progress.total_reading_time > 0:
+            total_pages_read = progress.chapters_read * (progress.total_pages_in_chapter or 1)
+            progress.average_reading_speed = (total_pages_read / progress.total_reading_time) * 60  # pages per minute
+    else:
+        # Create new progress
+        completion_percentage = 0
+        if total_chapters and chapters_read:
+            completion_percentage = (chapters_read / total_chapters) * 100
+        
+        progress = ReadingProgress(
+            user_id=user.id,
+            manga_id=manga_id,
+            source=source,
+            manga_title=manga_title,
+            current_chapter=current_chapter,
+            current_page=current_page,
+            total_pages_in_chapter=total_pages_in_chapter,
+            chapters_read=chapters_read,
+            total_chapters=total_chapters,
+            completion_percentage=completion_percentage,
+            total_reading_time=reading_time,
+            last_read_at=datetime.utcnow()
+        )
+        db.session.add(progress)
+    
+    db.session.commit()
+    return jsonify({'message': 'Reading progress updated successfully'})
+
+# --- READING STATISTICS ENDPOINTS ---
+@app.route('/reading-stats', methods=['GET'])
+@auth_manager.login_required
+def get_reading_stats():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Calculate statistics for the current month
+    now = datetime.utcnow()
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    
+    # Total manga read this month
+    manga_read_this_month = ReadHistory.query.filter(
+        ReadHistory.user_id == user.id,
+        ReadHistory.read_at >= start_of_month
+    ).distinct(ReadHistory.manga_id).count()
+    
+    # Total reading time this month
+    total_reading_time = ReadHistory.query.filter(
+        ReadHistory.user_id == user.id,
+        ReadHistory.read_at >= start_of_month
+    ).with_entities(db.func.sum(ReadHistory.reading_time)).scalar() or 0
+    
+    total_hours = total_reading_time / 3600  # Convert seconds to hours
+    
+    # Reading streak calculation
+    # This is a simplified version - you might want to implement a more sophisticated streak calculation
+    current_streak = 0
+    last_read_date = ReadHistory.query.filter_by(user_id=user.id).order_by(ReadHistory.read_at.desc()).first()
+    if last_read_date:
+        days_since_last_read = (now - last_read_date.read_at).days
+        if days_since_last_read <= 1:
+            current_streak = 1  # Simplified - you'd want to calculate actual streak
+    
+    # Average rating (from reading list entries)
+    avg_rating = db.session.query(db.func.avg(ReadingListEntry.rating)).filter(
+        ReadingListEntry.reading_list.has(user_id=user.id),
+        ReadingListEntry.rating.isnot(None)
+    ).scalar() or 0
+    
+    # Reading goals (example goals)
+    goals = [
+        {
+            'title': 'Read 10 manga this month',
+            'progress': manga_read_this_month,
+            'target': 10,
+            'description': 'Complete 10 different manga series'
+        },
+        {
+            'title': 'Read for 20 hours this month',
+            'progress': int(total_hours),
+            'target': 20,
+            'description': 'Spend 20 hours reading manga'
+        },
+        {
+            'title': 'Maintain 7-day reading streak',
+            'progress': current_streak,
+            'target': 7,
+            'description': 'Read manga for 7 consecutive days'
+        }
+    ]
+    
+    return jsonify({
+        'total_manga': manga_read_this_month,
+        'total_hours': total_hours,
+        'current_streak': current_streak,
+        'average_rating': float(avg_rating),
+        'goals': goals
+    })
+
+# --- NOTIFICATIONS ENDPOINTS ---
+@app.route('/notifications', methods=['GET'])
+@auth_manager.login_required
+def get_notifications():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    notifications = Notification.query.filter_by(user_id=user.id).order_by(Notification.created_at.desc()).limit(20).all()
+    unread_count = Notification.query.filter_by(user_id=user.id, read=False).count()
+    
+    return jsonify({
+        'notifications': [
+            {
+                'id': n.id,
+                'type': n.type,
+                'title': n.title,
+                'message': n.message,
+                'data': n.data,
+                'read': n.read,
+                'created_at': n.created_at
+            } for n in notifications
+        ],
+        'unread_count': unread_count
+    })
+
+@app.route('/notifications/<int:notification_id>/read', methods=['PUT'])
+@auth_manager.login_required
+def mark_notification_read(notification_id):
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    notification = Notification.query.filter_by(id=notification_id, user_id=user.id).first()
+    if not notification:
+        return jsonify({'error': 'Notification not found'}), 404
+    
+    notification.read = True
+    db.session.commit()
+    
+    return jsonify({'message': 'Notification marked as read'})
+
+# --- READING LISTS ENDPOINTS ---
+@app.route('/reading-lists', methods=['GET'])
+@auth_manager.login_required
+def get_reading_lists():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    lists = ReadingList.query.filter_by(user_id=user.id).all()
+    return jsonify([
+        {
+            'id': l.id,
+            'name': l.name,
+            'description': l.description,
+            'is_default': l.is_default,
+            'color': l.color,
+            'created_at': l.created_at,
+            'updated_at': l.updated_at,
+            'manga_count': len(l.manga_entries)
+        } for l in lists
+    ])
+
+@app.route('/reading-lists', methods=['POST'])
+@auth_manager.login_required
+def create_reading_list():
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description', '')
+    color = data.get('color', '#3B82F6')
+    
+    if not name:
+        return jsonify({'error': 'List name is required'}), 400
+    
+    # Check if list with same name already exists
+    existing_list = ReadingList.query.filter_by(user_id=user.id, name=name).first()
+    if existing_list:
+        return jsonify({'error': 'A list with this name already exists'}), 400
+    
+    reading_list = ReadingList(
+        user_id=user.id,
+        name=name,
+        description=description,
+        color=color
+    )
+    db.session.add(reading_list)
+    db.session.commit()
+    
+    return jsonify({
+        'message': 'Reading list created successfully',
+        'list': {
+            'id': reading_list.id,
+            'name': reading_list.name,
+            'description': reading_list.description,
+            'color': reading_list.color
+        }
+    })
+
+@app.route('/reading-lists/<int:list_id>/manga', methods=['POST'])
+@auth_manager.login_required
+def add_manga_to_list(list_id):
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Verify the list belongs to the user
+    reading_list = ReadingList.query.filter_by(id=list_id, user_id=user.id).first()
+    if not reading_list:
+        return jsonify({'error': 'Reading list not found'}), 404
+    
+    data = request.get_json()
+    manga_id = data.get('manga_id')
+    source = data.get('source')
+    manga_title = data.get('manga_title')
+    cover_url = data.get('cover_url')
+    notes = data.get('notes', '')
+    rating = data.get('rating')
+    tags = data.get('tags', [])
+    
+    if not all([manga_id, source, manga_title]):
+        return jsonify({'error': 'manga_id, source, and manga_title are required'}), 400
+    
+    # Check if manga is already in the list
+    existing_entry = ReadingListEntry.query.filter_by(
+        reading_list_id=list_id,
+        manga_id=manga_id,
+        source=source
+    ).first()
+    
+    if existing_entry:
+        return jsonify({'error': 'Manga is already in this list'}), 400
+    
+    entry = ReadingListEntry(
+        reading_list_id=list_id,
+        manga_id=manga_id,
+        source=source,
+        manga_title=manga_title,
+        cover_url=cover_url,
+        notes=notes,
+        rating=rating,
+        tags=tags
+    )
+    db.session.add(entry)
+    db.session.commit()
+    
+    return jsonify({'message': 'Manga added to list successfully'})
 
 if __name__ == '__main__':
     port = int(os.getenv('PLAYWRIGHT_PORT', 5000))

@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import json
 
 # SQLAlchemy instance (to be initialized in app.py)
 db = SQLAlchemy()
@@ -12,16 +13,23 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     hasadmin = db.Column(db.Boolean, nullable=False, default=False)
+    
+    # New fields for enhanced features
+    avatar_url = db.Column(db.String(512))
+    bio = db.Column(db.Text)
+    preferences = db.Column(db.JSON, default={})  # User preferences as JSON
+    reading_goals = db.Column(db.JSON, default={})  # Reading goals and achievements
+    last_active = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    reading_lists = db.relationship('ReadingList', backref='user', lazy=True, cascade='all, delete-orphan')
+    reading_progress = db.relationship('ReadingProgress', backref='user', lazy=True, cascade='all, delete-orphan')
+    notifications = db.relationship('Notification', backref='user', lazy=True, cascade='all, delete-orphan')
+    bookmarks = db.relationship('Bookmark', backref='user', lazy=True, cascade='all, delete-orphan')
+    notes = db.relationship('Note', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<User {self.username}>'
-
-# Example for future cache table (user-scoped)
-# class MangaCache(db.Model):
-#     __tablename__ = 'manga_cache'
-#     id = db.Column(db.Integer, primary_key=True)
-#     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
-#     ... # other fields 
 
 class PasswordResetToken(db.Model):
     __tablename__ = 'password_reset_tokens'
@@ -40,7 +48,160 @@ class ReadHistory(db.Model):
     source = db.Column(db.String(64), nullable=False)
     manga_id = db.Column(db.String(128), nullable=False)
     chapter_url = db.Column(db.String(255), nullable=False)
-    read_at = db.Column(db.DateTime, default=datetime.utcnow) 
+    read_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # New fields for enhanced tracking
+    reading_time = db.Column(db.Integer)  # Reading time in seconds
+    pages_read = db.Column(db.Integer)
+    total_pages = db.Column(db.Integer)
+    completion_percentage = db.Column(db.Float)  # 0-100
+
+class ReadingProgress(db.Model):
+    """Model for tracking reading progress per manga"""
+    __tablename__ = 'reading_progress'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    manga_id = db.Column(db.String(128), nullable=False)
+    source = db.Column(db.String(64), nullable=False)
+    manga_title = db.Column(db.String(255), nullable=False)
+    
+    # Current reading position
+    current_chapter = db.Column(db.String(255))
+    current_page = db.Column(db.Integer, default=1)
+    total_pages_in_chapter = db.Column(db.Integer)
+    
+    # Progress tracking
+    chapters_read = db.Column(db.Integer, default=0)
+    total_chapters = db.Column(db.Integer)
+    completion_percentage = db.Column(db.Float, default=0.0)
+    
+    # Timestamps
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_read_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)
+    
+    # Reading statistics
+    total_reading_time = db.Column(db.Integer, default=0)  # Total time in seconds
+    average_reading_speed = db.Column(db.Float)  # Pages per minute
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'manga_id', 'source', name='unique_user_manga_progress'),
+    )
+
+class ReadingList(db.Model):
+    """Model for user reading lists (Currently Reading, Plan to Read, Completed, etc.)"""
+    __tablename__ = 'reading_lists'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # e.g., "Currently Reading", "Plan to Read"
+    description = db.Column(db.Text)
+    is_default = db.Column(db.Boolean, default=False)  # Default lists like "Currently Reading"
+    color = db.Column(db.String(7))  # Hex color code
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    manga_entries = db.relationship('ReadingListEntry', backref='reading_list', lazy=True, cascade='all, delete-orphan')
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'name', name='unique_user_list_name'),
+    )
+
+class ReadingListEntry(db.Model):
+    """Model for manga entries in reading lists"""
+    __tablename__ = 'reading_list_entries'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    reading_list_id = db.Column(db.Integer, db.ForeignKey('reading_lists.id'), nullable=False)
+    manga_id = db.Column(db.String(128), nullable=False)
+    source = db.Column(db.String(64), nullable=False)
+    manga_title = db.Column(db.String(255), nullable=False)
+    cover_url = db.Column(db.String(512))
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.Text)  # User notes about this manga
+    rating = db.Column(db.Integer)  # 1-5 star rating
+    tags = db.Column(db.JSON)  # Custom tags as JSON array
+    
+    __table_args__ = (
+        db.UniqueConstraint('reading_list_id', 'manga_id', 'source', name='unique_list_manga_entry'),
+    )
+
+class Notification(db.Model):
+    """Model for user notifications"""
+    __tablename__ = 'notifications'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)  # 'new_chapter', 'update', 'system', etc.
+    title = db.Column(db.String(255), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    data = db.Column(db.JSON)  # Additional data as JSON
+    read = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Index for efficient querying
+    __table_args__ = (
+        db.Index('idx_notifications_user_read', 'user_id', 'read'),
+        db.Index('idx_notifications_created', 'created_at'),
+    )
+
+class Bookmark(db.Model):
+    """Model for bookmarks within chapters"""
+    __tablename__ = 'bookmarks'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    manga_id = db.Column(db.String(128), nullable=False)
+    source = db.Column(db.String(64), nullable=False)
+    chapter_title = db.Column(db.String(255), nullable=False)
+    page_number = db.Column(db.Integer, nullable=False)
+    note = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.Index('idx_bookmarks_user_manga', 'user_id', 'manga_id', 'source'),
+    )
+
+class Note(db.Model):
+    """Model for user notes and highlights"""
+    __tablename__ = 'notes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    manga_id = db.Column(db.String(128), nullable=False)
+    source = db.Column(db.String(64), nullable=False)
+    chapter_title = db.Column(db.String(255), nullable=False)
+    page_number = db.Column(db.Integer, nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    highlight_text = db.Column(db.Text)  # For text highlights
+    color = db.Column(db.String(7))  # Hex color for highlights
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    __table_args__ = (
+        db.Index('idx_notes_user_manga', 'user_id', 'manga_id', 'source'),
+    )
+
+class MangaUpdate(db.Model):
+    """Model for tracking manga updates and new chapters"""
+    __tablename__ = 'manga_updates'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    manga_id = db.Column(db.String(128), nullable=False)
+    source = db.Column(db.String(64), nullable=False)
+    manga_title = db.Column(db.String(255), nullable=False)
+    chapter_title = db.Column(db.String(255), nullable=False)
+    chapter_url = db.Column(db.String(512), nullable=False)
+    chapter_number = db.Column(db.Float)  # For sorting
+    release_date = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    __table_args__ = (
+        db.Index('idx_updates_manga_source', 'manga_id', 'source'),
+        db.Index('idx_updates_release_date', 'release_date'),
+    )
 
 class PreloadedManga(db.Model):
     """Model for storing preloaded manga data for instant search results"""

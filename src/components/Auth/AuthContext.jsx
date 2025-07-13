@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyToken = async (token) => {
     try {
-      const response = await fetch('http://localhost:5000/me', {
+      const response = await fetch('/api/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Call logout endpoint to blacklist tokens
       if (accessToken) {
-        await fetch('http://localhost:5000/logout', {
+        await fetch('/api/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await fetch('http://localhost:5000/refresh', {
+      const response = await fetch('/api/refresh', {
         method: 'POST',
         credentials: 'include',
       });

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css';
 import Header from './components/Header.jsx';
+import Dashboard from './components/Dashboard.jsx';
 import SearchPage from './components/SearchPage.jsx';
 import MangaDetails from './components/MangaDetails.jsx';
 import Sources from './components/Sources.jsx';
@@ -12,6 +13,8 @@ import ForgotPassword from './components/Auth/ForgotPassword.jsx';
 import ResetPassword from './components/Auth/ResetPassword.jsx';
 import Profile from './components/Profile.jsx';
 import ReadHistory from './components/ReadHistory.jsx';
+import ReadingLists from './components/ReadingLists.jsx';
+import Settings from './components/Settings.jsx';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext.jsx';
 import LandingPage from './components/LandingPage.jsx';
 
@@ -71,9 +74,12 @@ const AppContent = () => {
             </>
           ) : (
             <>
-              <Route path="/" element={<SearchPage />} />
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/search" element={<SearchPage />} />
               <Route path="/saved" element={<SavedManga />} />
               <Route path="/sources" element={<Sources />} />
+              <Route path="/reading-lists" element={<ProtectedRoute><ReadingLists /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/cache" element={<ProtectedRoute><CacheManager /></ProtectedRoute>} />
               <Route path="/manga/:source/:id" element={<MangaDetails />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

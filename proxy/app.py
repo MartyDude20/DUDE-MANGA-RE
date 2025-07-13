@@ -315,6 +315,110 @@ def clear_read_history():
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to clear read history: {str(e)}'}), 500
 
+# --- NEW API ENDPOINTS ---
+
+@app.route('/api/reading-progress', methods=['GET'])
+def get_reading_progress():
+    """Get user reading progress"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/reading-progress", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get reading progress: {str(e)}'}), 500
+
+@app.route('/api/reading-progress/continue', methods=['GET'])
+def get_continue_reading():
+    """Get continue reading list"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/reading-progress/continue", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get continue reading: {str(e)}'}), 500
+
+@app.route('/api/reading-progress', methods=['POST'])
+def update_reading_progress():
+    """Update reading progress"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/reading-progress", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to update reading progress: {str(e)}'}), 500
+
+@app.route('/api/reading-stats', methods=['GET'])
+def get_reading_stats():
+    """Get reading statistics"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/reading-stats", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get reading stats: {str(e)}'}), 500
+
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    """Get user notifications"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/notifications", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get notifications: {str(e)}'}), 500
+
+@app.route('/api/notifications/<int:notification_id>/read', methods=['PUT'])
+def mark_notification_read(notification_id):
+    """Mark notification as read"""
+    try:
+        headers = get_forward_headers()
+        response = requests.put(f"{PLAYWRIGHT_URL}/notifications/{notification_id}/read", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to mark notification as read: {str(e)}'}), 500
+
+@app.route('/api/reading-lists', methods=['GET'])
+def get_reading_lists():
+    """Get user reading lists"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/reading-lists", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get reading lists: {str(e)}'}), 500
+
+@app.route('/api/reading-lists', methods=['POST'])
+def create_reading_list():
+    """Create new reading list"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/reading-lists", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to create reading list: {str(e)}'}), 500
+
+@app.route('/api/reading-lists/<int:list_id>/manga', methods=['POST'])
+def add_manga_to_list(list_id):
+    """Add manga to reading list"""
+    try:
+        data = request.get_json()
+        headers = get_forward_headers()
+        response = requests.post(f"{PLAYWRIGHT_URL}/reading-lists/{list_id}/manga", json=data, headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to add manga to list: {str(e)}'}), 500
+
 if __name__ == '__main__':
     port = int(os.getenv('FLASK_PORT', 3006))
     app.run(host='0.0.0.0', port=port, debug=True) 
