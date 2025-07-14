@@ -59,6 +59,10 @@ app.register_blueprint(chapter_bp)
 app.register_blueprint(weebcentral_chapter_bp)
 app.register_blueprint(mangadex.mangadex_chapter_bp)
 
+# Register lazy loading blueprint
+from sources.weebcentral_lazy import weebcentral_lazy_bp
+app.register_blueprint(weebcentral_lazy_bp, url_prefix='/lazy')
+
 # Initialize cache manager
 cache_manager = CacheManager()
 
@@ -152,19 +156,21 @@ def get_manga_details(source, manga_id):
     source = source.lower()
     force_refresh = request.args.get('refresh', 'false').lower() == 'true'
     
-    # Get user_id from request context (None for anonymous users)
-    user_id = getattr(request, 'current_user', None)
-    user_id = user_id.id if user_id else None
+    # Always use global cache for manga details
+    user_id = None
+    
+    print(f"[API DEBUG] get_manga_details: source={source}, manga_id={manga_id}, force_refresh={force_refresh}")
     
     if source not in ENABLED_SOURCES or not ENABLED_SOURCES[source]:
         return jsonify({'error': f'Source {source} is not enabled'}), 400
     
     try:
-        # For now, use the old cache manager for manga details
-        # TODO: Implement manga details caching in simple search service
+        # Use global cache for manga details
+        print(f"[API DEBUG] Checking cache for {manga_id} ({source})")
         details = cache_manager.get_cached_manga(manga_id, source, user_id)
         
         if not details or force_refresh:
+            print(f"[API DEBUG] Cache miss or force refresh - scraping fresh details")
             # Scrape fresh details
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
@@ -176,16 +182,23 @@ def get_manga_details(source, manga_id):
                     if details:
                         details['source'] = source
                         details['cached'] = False
-                        # Cache the fresh details
+                        print(f"[API DEBUG] Scraped details: title={details.get('title')}, chapters={len(details.get('chapters', []))}")
+                        # Cache the fresh details globally
                         cache_manager.cache_manga_details(manga_id, source, details, user_id)
+                    else:
+                        print(f"[API DEBUG] Failed to scrape details for {manga_id}")
                 
                 browser.close()
+        else:
+            print(f"[API DEBUG] Cache hit - using cached details")
+            details['cached'] = True
         
         if not details:
             return jsonify({'error': 'Manga not found'}), 404
             
         return jsonify(details)
     except Exception as e:
+        print(f"[API DEBUG] Error: {e}")
         return jsonify({'error': f'Failed to fetch manga details: {str(e)}'}), 500
 
 @app.route('/cache/stats', methods=['GET'])

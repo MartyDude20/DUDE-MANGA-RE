@@ -80,6 +80,54 @@ def get_chapter_images(source, manga_id, chapter_id):
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to fetch chapter images: {str(e)}'}), 500
 
+# Lazy loading endpoints
+@app.route('/api/lazy/manga/<manga_id>/details', methods=['GET'])
+def get_lazy_manga_details(manga_id):
+    """Get manga details with lazy loading"""
+    try:
+        headers = get_forward_headers()
+        params = request.args.to_dict()
+        response = requests.get(f"{PLAYWRIGHT_URL}/lazy/manga/{manga_id}/details", headers=headers, params=params)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to fetch manga details: {str(e)}'}), 500
+
+@app.route('/api/lazy/manga/<manga_id>/chapters', methods=['GET'])
+def get_lazy_chapters(manga_id):
+    """Get chapters with pagination"""
+    try:
+        headers = get_forward_headers()
+        params = request.args.to_dict()
+        response = requests.get(f"{PLAYWRIGHT_URL}/lazy/manga/{manga_id}/chapters", headers=headers, params=params)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to fetch chapters: {str(e)}'}), 500
+
+@app.route('/api/lazy/chapter-images/<path:chapter_url>', methods=['GET'])
+def get_lazy_chapter_images(chapter_url):
+    """Get chapter images with lazy loading"""
+    try:
+        headers = get_forward_headers()
+        params = request.args.to_dict()
+        response = requests.get(f"{PLAYWRIGHT_URL}/lazy/chapter-images/{chapter_url}", headers=headers, params=params)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to fetch chapter images: {str(e)}'}), 500
+
+@app.route('/api/lazy/progress/<session_id>', methods=['GET'])
+def get_lazy_progress(session_id):
+    """Get progress updates for lazy loading"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/lazy/progress/{session_id}", headers=headers)
+        response.raise_for_status()
+        return jsonify(response.json())
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to fetch progress: {str(e)}'}), 500
+
 @app.route('/api/cache/stats', methods=['GET'])
 def get_cache_stats():
     """Get cache statistics"""

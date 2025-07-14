@@ -1,64 +1,40 @@
 #!/usr/bin/env python3
-"""
-Check database structure
-"""
+import sqlite3
+import json
 
-import os
-import sys
-from dotenv import load_dotenv
-load_dotenv()
-
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from models import db
-
-def check_database():
-    """Check database structure"""
-    app = Flask(__name__)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///manga_cache.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    db.init_app(app)
-    
-    with app.app_context():
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
+def check_db():
+    with sqlite3.connect("manga_cache.db") as conn:
+        cursor = conn.cursor()
         
-        print("📋 Database Tables:")
-        tables = inspector.get_table_names()
-        for table in tables:
-            print(f"  - {table}")
+        # Check for our test entry
+        cursor.execute("""
+            SELECT user_id, manga_id, source, title, chapters 
+            FROM manga_cache 
+            WHERE manga_id = ?
+        """, ("test-cache-123",))
         
-        print("\n📊 reading_lists table structure:")
-        if 'reading_lists' in tables:
-            columns = inspector.get_columns('reading_lists')
-            for col in columns:
-                print(f"  - {col['name']}: {col['type']}")
-        else:
-            print("  - Table does not exist")
+        entries = cursor.fetchall()
+        print(f"Found {len(entries)} entries for test-cache-123:")
+        for entry in entries:
+            user_id, manga_id, source, title, chapters = entry
+            user_type = "Global" if user_id is None else f"User {user_id}"
+            chapter_count = len(json.loads(chapters)) if chapters else 0
+            print(f"  - {user_type}: {title} ({chapter_count} chapters)")
         
-        print("\n📊 users table structure:")
-        if 'users' in tables:
-            columns = inspector.get_columns('users')
-            for col in columns:
-                print(f"  - {col['name']}: {col['type']}")
-        else:
-            print("  - Table does not exist")
+        # Check all entries
+        cursor.execute("""
+            SELECT user_id, manga_id, source, title 
+            FROM manga_cache 
+            ORDER BY last_updated DESC 
+            LIMIT 5
+        """)
+        
+        all_entries = cursor.fetchall()
+        print(f"\nRecent entries:")
+        for entry in all_entries:
+            user_id, manga_id, source, title = entry
+            user_type = "Global" if user_id is None else f"User {user_id}"
+            print(f"  - {user_type}: {manga_id} ({source}) - {title}")
 
-        print("\n📊 reading_progress table structure:")
-        if 'reading_progress' in tables:
-            columns = inspector.get_columns('reading_progress')
-            for col in columns:
-                print(f"  - {col['name']}: {col['type']}")
-        else:
-            print("  - Table does not exist")
-
-        print("\n📊 notes table structure:")
-        if 'notes' in tables:
-            columns = inspector.get_columns('notes')
-            for col in columns:
-                print(f"  - {col['name']}: {col['type']} (nullable={col['nullable']})")
-        else:
-            print("  - Table does not exist")
-
-if __name__ == '__main__':
-    check_database() 
+if __name__ == "__main__":
+    check_db() 

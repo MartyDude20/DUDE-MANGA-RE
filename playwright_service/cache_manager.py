@@ -108,17 +108,39 @@ class CacheManager:
     
     def get_cached_manga(self, manga_id: str, source: str, user_id: Optional[int] = None) -> Optional[Dict]:
         """Get cached manga details"""
+        print(f"[CACHE DEBUG] get_cached_manga: manga_id={manga_id}, source={source}, user_id={user_id}")
+        
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+            # First, let's see what's in the database
             cursor.execute('''
-                SELECT title, image_url, status, author, description, chapters, 
-                       last_updated, last_refreshed 
+                SELECT user_id, manga_id, source, title 
                 FROM manga_cache 
-                WHERE user_id = ? AND manga_id = ? AND source = ?
-            ''', (user_id, manga_id, source))
-            
+                WHERE manga_id = ? AND source = ?
+            ''', (manga_id, source))
+            all_entries = cursor.fetchall()
+            print(f"[CACHE DEBUG] Found {len(all_entries)} entries in database:")
+            for entry in all_entries:
+                db_user_id, db_manga_id, db_source, db_title = entry
+                print(f"[CACHE DEBUG]   - user_id={db_user_id}, manga_id={db_manga_id}, source={db_source}, title={db_title}")
+            # Now try the actual query
+            if user_id is None:
+                cursor.execute('''
+                    SELECT title, image_url, status, author, description, chapters, 
+                           last_updated, last_refreshed 
+                    FROM manga_cache 
+                    WHERE user_id IS NULL AND manga_id = ? AND source = ?
+                ''', (manga_id, source))
+            else:
+                cursor.execute('''
+                    SELECT title, image_url, status, author, description, chapters, 
+                           last_updated, last_refreshed 
+                    FROM manga_cache 
+                    WHERE user_id = ? AND manga_id = ? AND source = ?
+                ''', (user_id, manga_id, source))
             result = cursor.fetchone()
             if result:
+                print(f"[CACHE DEBUG] ✓ Cache HIT for {manga_id} ({source})")
                 return {
                     'title': result[0],
                     'image': result[1],
@@ -129,14 +151,34 @@ class CacheManager:
                     'last_updated': result[6],
                     'last_refreshed': result[7]
                 }
+            else:
+                print(f"[CACHE DEBUG] ✗ Cache MISS for {manga_id} ({source})")
+                print(f"[CACHE DEBUG] Query parameters: user_id={user_id} (type: {type(user_id)}), manga_id={manga_id}, source={source}")
             return None
     
     def cache_manga_details(self, manga_id: str, source: str, manga_data: Dict, user_id: Optional[int] = None) -> None:
         """Cache manga details"""
+        print(f"[CACHE DEBUG] cache_manga_details: manga_id={manga_id}, source={source}, user_id={user_id}")
+        print(f"[CACHE DEBUG] Data: title={manga_data.get('title')}, chapters={len(manga_data.get('chapters', []))}")
+        
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
+            
+            # First, delete any existing entries for this manga/source/user combination
+            if user_id is None:
+                cursor.execute('''
+                    DELETE FROM manga_cache 
+                    WHERE user_id IS NULL AND manga_id = ? AND source = ?
+                ''', (manga_id, source))
+            else:
+                cursor.execute('''
+                    DELETE FROM manga_cache 
+                    WHERE user_id = ? AND manga_id = ? AND source = ?
+                ''', (user_id, manga_id, source))
+            
+            # Then insert the new data
             cursor.execute('''
-                INSERT OR REPLACE INTO manga_cache 
+                INSERT INTO manga_cache 
                 (user_id, manga_id, source, title, image_url, status, author, description, chapters, last_updated, last_refreshed) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
@@ -145,6 +187,7 @@ class CacheManager:
                 json.dumps(manga_data.get('chapters', [])), datetime.now(), datetime.now()
             ))
             conn.commit()
+            print(f"[CACHE DEBUG] ✓ Cached manga details for {manga_id} ({source})")
     
     def update_manga_refresh_time(self, manga_id: str, source: str, user_id: Optional[int] = None) -> None:
         """Update the last refresh time for a manga"""
