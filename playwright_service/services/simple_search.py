@@ -4,13 +4,14 @@ import time
 import concurrent.futures
 from typing import List, Dict, Optional
 import logging
-from playwright.sync_api import sync_playwright
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from sources import weebcentral, asurascans, mangadex
+from sources import optimized_weebcentral_fast as weebcentral, asurascans, mangadex
 from services.simple_cache import search_cache
+from services.browser_pool import browser_pool
+from services.performance_monitor import performance_monitor
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +62,15 @@ class SimpleSearchService:
                 search_time = time.time() - start_time
                 self._update_avg_time(search_time)
                 
+                # Record performance metrics
+                performance_monitor.record_search(
+                    query=query,
+                    sources=sources,
+                    duration=search_time,
+                    results_count=len(cached_results),
+                    cached=True
+                )
+                
                 logger.info(f"Cache HIT for '{query}' - {len(cached_results)} results in {search_time:.2f}s")
                 return self._add_cache_info(cached_results, True)
         
@@ -75,6 +85,15 @@ class SimpleSearchService:
         
         search_time = time.time() - start_time
         self._update_avg_time(search_time)
+        
+        # Record performance metrics
+        performance_monitor.record_search(
+            query=query,
+            sources=sources,
+            duration=search_time,
+            results_count=len(fresh_results),
+            cached=False
+        )
         
         logger.info(f"Fresh search for '{query}' - {len(fresh_results)} results in {search_time:.2f}s")
         return self._add_cache_info(fresh_results, False)
@@ -106,26 +125,45 @@ class SimpleSearchService:
         return all_results
     
     def _scrape_source(self, query: str, source: str) -> List[Dict]:
-        """Scrape a single source"""
+        """Scrape a single source using browser pool"""
+        browser = None
         try:
-            with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
-                page = browser.new_page()
-                
-                source_module = self.sources[source]
-                results = source_module.search(page, query)
-                
-                # Add source information to results
-                for result in results:
-                    result['source'] = source
-                    result['cached'] = False
-                
-                browser.close()
-                return results
+            # Get browser from pool
+            browser = browser_pool.get_browser()
+            if not browser:
+                logger.error(f"Failed to get browser for {source}")
+                return []
+            
+            page = browser.new_page()
+            
+            # Optimize page settings for speed
+            page.set_viewport_size({"width": 1280, "height": 720})
+            page.set_extra_http_headers({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            })
+            
+            # Disable images and other resources for faster loading
+            page.route("**/*.{png,jpg,jpeg,gif,svg,ico,woff,woff2,ttf,eot}", lambda route: route.abort())
+            page.route("**/*.{css,js}", lambda route: route.continue_())
+            
+            source_module = self.sources[source]
+            results = source_module.search(page, query)
+            
+            # Add source information to results
+            for result in results:
+                result['source'] = source
+                result['cached'] = False
+            
+            page.close()
+            return results
                 
         except Exception as e:
             logger.error(f"Failed to scrape {source}: {e}")
             return []
+        finally:
+            # Always return browser to pool
+            if browser:
+                browser_pool.return_browser(browser)
     
     def _add_cache_info(self, results: List[Dict], from_cache: bool) -> List[Dict]:
         """Add cache information to results"""

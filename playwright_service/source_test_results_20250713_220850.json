@@ -1,0 +1,418 @@
+{
+  "timestamp": "20250713_220850",
+  "test_summary": {
+    "total_queries": 4,
+    "total_searches": 12,
+    "success_rate": 1.0,
+    "total_time": 190.99551343917847,
+    "avg_time": 15.916292786598206
+  },
+  "performance_stats": {
+    "total_searches": 12,
+    "successful_searches": 12,
+    "success_rate": 1.0,
+    "total_time": 190.99551343917847,
+    "avg_time": 15.916292786598206,
+    "source_stats": {
+      "weebcentral": {
+        "total_searches": 4,
+        "successful_searches": 4,
+        "total_results": 3,
+        "total_time": 63.22162103652954,
+        "avg_time": 15.805405259132385,
+        "errors": [],
+        "success_rate": 1.0,
+        "avg_results": 0.75
+      },
+      "asurascans": {
+        "total_searches": 4,
+        "successful_searches": 4,
+        "total_results": 1,
+        "total_time": 66.033371925354,
+        "avg_time": 16.5083429813385,
+        "errors": [],
+        "success_rate": 1.0,
+        "avg_results": 0.25
+      },
+      "mangadex": {
+        "total_searches": 4,
+        "successful_searches": 4,
+        "total_results": 2,
+        "total_time": 61.74052047729492,
+        "avg_time": 15.43513011932373,
+        "errors": [],
+        "success_rate": 1.0,
+        "avg_results": 0.5
+      }
+    }
+  },
+  "detailed_results": {
+    "Solo Leveling": {
+      "results": {
+        "weebcentral": [
+          {
+            "id": "01J76XYCPSY3C4BNPBRY8JMCBE",
+            "title": "Solo Leveling",
+            "status": "",
+            "chapter": "",
+            "image": "https://temp.compsci88.com/cover/normal/01J76XYCPSY3C4BNPBRY8JMCBE.webp",
+            "details_url": "https://weebcentral.com/series/01J76XYCPSY3C4BNPBRY8JMCBE/Solo-Leveling",
+            "source": "weebcentral",
+            "cached": false,
+            "cache_timestamp": null
+          },
+          {
+            "id": "01J76XYEJVJ5H6AXPYWS4G0CFV",
+            "title": "Solo Leveling (Volume)",
+            "status": "",
+            "chapter": "",
+            "image": "https://temp.compsci88.com/cover/normal/01J76XYEJVJ5H6AXPYWS4G0CFV.webp",
+            "details_url": "https://weebcentral.com/series/01J76XYEJVJ5H6AXPYWS4G0CFV/Solo-Leveling-Volume-Version",
+            "source": "weebcentral",
+            "cached": false,
+            "cache_timestamp": null
+          },
+          {
+            "id": "01J76XYHERFDX1V9X4A032QT6B",
+            "title": "Solo Leveling: Ragnarok",
+            "status": "",
+            "chapter": "",
+            "image": "https://temp.compsci88.com/cover/normal/01J76XYHERFDX1V9X4A032QT6B.webp",
+            "details_url": "https://weebcentral.com/series/01J76XYHERFDX1V9X4A032QT6B/Solo-Leveling-Ragnarok",
+            "source": "weebcentral",
+            "cached": false,
+            "cache_timestamp": null
+          }
+        ],
+        "asurascans": [],
+        "mangadex": [
+          {
+            "id": "32d76d19-8a05-4db0-9fc2-e0b0648fe9d0",
+            "title": "Solo Leveling",
+            "description": "10 years ago, after \u201cthe Gate\u201d that connected the real world with the monster world opened, some of the ordinary, everyday people received the power to hunt monsters within the Gate. They are known as \u201cHunters\u201d. However, not all Hunters are powerful. My name is Sung Jin-Woo, an E-rank Hunter. I\u2019m someone who has to risk his life in the lowliest of dungeons, the \u201cWorld\u2019s Weakest\u201d. Having no skills whatsoever to display, I barely earned the required money by fighting in low-leveled dungeons\u2026 at least until I found a hidden dungeon with the hardest difficulty within the D-rank dungeons! In the end, as I was accepting death, I suddenly received a strange power, a quest log that only I could see, a secret to leveling up that only I know about! If I trained in accordance with my quests and hunted monsters, my level would rise. Changing from the weakest Hunter to the strongest S-rank Hunter!\n\n---\n**Links:**\n\n- Official English Translation [<Pocket Comics>](https://www.pocketcomics.com/comic/320) | [<WebNovel>](https://www.webnovel.com/comic/only-i-level-up-(solo-leveling)_15227640605485101) | [<Tapas>](https://tapas.io/series/solo-leveling-comic/info)\n- Alternate Official Raw - [Kakao Webtoon](https://webtoon.kakao.com/content/\ub098-\ud63c\uc790\ub9cc-\ub808\ubca8\uc5c5/2320)",
+            "image": "https://uploads.mangadex.org/covers/32d76d19-8a05-4db0-9fc2-e0b0648fe9d0/e90bdc47-c8b9-4df7-b2c0-17641b645ee1.jpg",
+            "details_url": "https://mangadex.org/title/32d76d19-8a05-4db0-9fc2-e0b0648fe9d0",
+            "source": "mangadex",
+            "cached": false,
+            "cache_timestamp": null
+          },
+          {
+            "id": "83ff1ad8-7ec5-4134-a8a1-40f1b37a4cc7",
+            "title": "Solo Leveling: Arise",
+            "description": "Webtoon series based on the game \"Solo Leveling: Arise\", this spin-off is set around the original series and is focused on various characters.",
+            "image": "https://uploads.mangadex.org/covers/83ff1ad8-7ec5-4134-a8a1-40f1b37a4cc7/8adc4d87-41c4-4f8b-a800-d0fccf9b10c5.jpg",
+            "details_url": "https://mangadex.org/title/83ff1ad8-7ec5-4134-a8a1-40f1b37a4cc7",
+            "source": "mangadex",
+            "cached": false,
+            "cache_timestamp": null
+          }
+        ]
+      },
+      "performance": [
+        {
+          "source": "weebcentral",
+          "query": "Solo Leveling",
+          "search_time": 3.192256212234497,
+          "results_count": 3,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 0,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 0
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 1,
+            "available_browsers": 1,
+            "max_idle_time": 300,
+            "playwright_instances": 1
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "asurascans",
+          "query": "Solo Leveling",
+          "search_time": 0.0035736560821533203,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 1,
+            "available_browsers": 1,
+            "max_idle_time": 300,
+            "playwright_instances": 1
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 1,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 1
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "mangadex",
+          "query": "Solo Leveling",
+          "search_time": 1.7293369770050049,
+          "results_count": 2,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 1,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 1
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 2,
+            "available_browsers": 1,
+            "max_idle_time": 300,
+            "playwright_instances": 2
+          },
+          "success": true,
+          "error": null
+        }
+      ]
+    },
+    "The Greatest Estate Developer": {
+      "results": {
+        "weebcentral": [],
+        "asurascans": [
+          {
+            "id": "the-greatest-estate-developer-c06bb18f",
+            "title": "The Greatest Estate Developer",
+            "status": "",
+            "chapter": "199",
+            "image": "https://gg.asuracomic.net/storage/media/163/conversions/fc6b81ea-thumb-small.webp",
+            "details_url": "series/the-greatest-estate-developer-c06bb18f",
+            "source": "asurascans",
+            "cached": false,
+            "cache_timestamp": null
+          }
+        ],
+        "mangadex": []
+      },
+      "performance": [
+        {
+          "source": "weebcentral",
+          "query": "The Greatest Estate Developer",
+          "search_time": 0.0035953521728515625,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 2,
+            "available_browsers": 1,
+            "max_idle_time": 300,
+            "playwright_instances": 2
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 2,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 2
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "asurascans",
+          "query": "The Greatest Estate Developer",
+          "search_time": 6.023448467254639,
+          "results_count": 1,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 2,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 2
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 1,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "mangadex",
+          "query": "The Greatest Estate Developer",
+          "search_time": 0.003681182861328125,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 1,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        }
+      ]
+    },
+    "Nano Machine": {
+      "results": {
+        "weebcentral": [],
+        "asurascans": [],
+        "mangadex": []
+      },
+      "performance": [
+        {
+          "source": "weebcentral",
+          "query": "Nano Machine",
+          "search_time": 30.015669107437134,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "asurascans",
+          "query": "Nano Machine",
+          "search_time": 30.004565000534058,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "mangadex",
+          "query": "Nano Machine",
+          "search_time": 30.006749868392944,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        }
+      ]
+    },
+    "One": {
+      "results": {
+        "weebcentral": [],
+        "asurascans": [],
+        "mangadex": []
+      },
+      "performance": [
+        {
+          "source": "weebcentral",
+          "query": "One",
+          "search_time": 30.01010036468506,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "asurascans",
+          "query": "One",
+          "search_time": 30.001784801483154,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        },
+        {
+          "source": "mangadex",
+          "query": "One",
+          "search_time": 30.000752449035645,
+          "results_count": 0,
+          "pool_stats_before": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "pool_stats_after": {
+            "pool_size": 3,
+            "active_browsers": 3,
+            "available_browsers": 0,
+            "max_idle_time": 300,
+            "playwright_instances": 3
+          },
+          "success": true,
+          "error": null
+        }
+      ]
+    }
+  }
+}

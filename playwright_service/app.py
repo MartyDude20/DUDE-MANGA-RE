@@ -302,6 +302,26 @@ def get_performance_metrics():
     except Exception as e:
         return jsonify({'error': f'Failed to get metrics: {str(e)}'}), 500
 
+@app.route('/performance/report', methods=['GET'])
+def get_performance_report():
+    """Get comprehensive performance report"""
+    try:
+        from services.performance_monitor import performance_monitor
+        report = performance_monitor.get_performance_report()
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({'error': f'Failed to get performance report: {str(e)}'}), 500
+
+@app.route('/performance/reset', methods=['POST'])
+def reset_performance_metrics():
+    """Reset performance metrics"""
+    try:
+        from services.performance_monitor import performance_monitor
+        performance_monitor.reset_metrics()
+        return jsonify({'message': 'Performance metrics reset successfully'})
+    except Exception as e:
+        return jsonify({'error': f'Failed to reset metrics: {str(e)}'}), 500
+
 @app.route('/test/cache/clear', methods=['POST'])
 def test_clear_cache():
     """Clear cache for testing purposes (no auth required)"""
