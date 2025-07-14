@@ -232,9 +232,13 @@ def refresh():
     try:
         headers = get_forward_headers()
         response = requests.post(f"{PLAYWRIGHT_URL}/refresh", headers=headers)
-        response.raise_for_status()
+        
+        # Forward the exact status code and response from the backend
         return jsonify(response.json()), response.status_code, dict(response.headers)
     except requests.RequestException as e:
+        # If it's a 401 error, forward it properly
+        if hasattr(e, 'response') and e.response is not None:
+            return jsonify(e.response.json()), e.response.status_code
         return jsonify({'error': f'Token refresh failed: {str(e)}'}), 500
 
 @app.route('/api/logout', methods=['POST'])
@@ -254,9 +258,13 @@ def get_current_user():
     try:
         headers = get_forward_headers()
         response = requests.get(f"{PLAYWRIGHT_URL}/me", headers=headers)
-        response.raise_for_status()
-        return jsonify(response.json())
+        
+        # Forward the exact status code and response from the backend
+        return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
+        # If it's a 401 error, forward it properly
+        if hasattr(e, 'response') and e.response is not None:
+            return jsonify(e.response.json()), e.response.status_code
         return jsonify({'error': f'Failed to get user info: {str(e)}'}), 500
 
 @app.route('/api/password-reset/request', methods=['POST'])
@@ -409,6 +417,17 @@ def get_reading_stats():
         return jsonify(response.json()), response.status_code
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to get reading stats: {str(e)}'}), 500
+
+@app.route('/api/dashboard', methods=['GET'])
+def get_dashboard():
+    """Get all dashboard data in a single request"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/dashboard", headers=headers, params=dict(request.args))
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get dashboard data: {str(e)}'}), 500
 
 @app.route('/api/notifications', methods=['GET'])
 def get_notifications():

@@ -792,6 +792,145 @@ def update_reading_progress():
     db.session.commit()
     return jsonify({'message': 'Reading progress updated successfully'})
 
+# --- DASHBOARD ENDPOINT ---
+@app.route('/dashboard', methods=['GET'])
+@auth_manager.login_required
+def get_dashboard_data():
+    """Get all dashboard data in a single request for better performance"""
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    try:
+        # Note: Dashboard caching will be implemented later
+        # For now, we'll fetch fresh data each time
+        
+        # Get limit parameters
+        activity_limit = request.args.get('activity_limit', type=int, default=5)
+        continue_limit = request.args.get('continue_limit', type=int, default=3)
+        
+        # Fetch all data in parallel using database queries
+        # Recent activity
+        recent_activity = ReadHistory.query.filter_by(user_id=user.id).order_by(
+            ReadHistory.read_at.desc()
+        ).limit(activity_limit).all()
+        
+        # Continue reading (manga in progress)
+        continue_reading = ReadingProgress.query.filter_by(
+            user_id=user.id
+        ).filter(
+            ReadingProgress.completed_at.is_(None)
+        ).order_by(ReadingProgress.last_read_at.desc()).limit(continue_limit).all()
+        
+        # Reading statistics
+        now = datetime.utcnow()
+        start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Total manga read this month
+        manga_read_this_month = ReadHistory.query.filter(
+            ReadHistory.user_id == user.id,
+            ReadHistory.read_at >= start_of_month
+        ).distinct(ReadHistory.manga_id).count()
+        
+        # Total reading time this month
+        total_reading_time = ReadHistory.query.filter(
+            ReadHistory.user_id == user.id,
+            ReadHistory.read_at >= start_of_month
+        ).with_entities(db.func.sum(ReadHistory.reading_time)).scalar() or 0
+        
+        total_hours = total_reading_time / 3600  # Convert seconds to hours
+        
+        # Reading streak calculation
+        current_streak = 0
+        last_read_date = ReadHistory.query.filter_by(user_id=user.id).order_by(
+            ReadHistory.read_at.desc()
+        ).first()
+        if last_read_date:
+            days_since_last_read = (now - last_read_date.read_at).days
+            if days_since_last_read <= 1:
+                current_streak = 1  # Simplified - you'd want to calculate actual streak
+        
+        # Average rating (from reading list entries)
+        avg_rating = db.session.query(db.func.avg(ReadingListEntry.rating)).filter(
+            ReadingListEntry.reading_list.has(user_id=user.id),
+            ReadingListEntry.rating.isnot(None)
+        ).scalar() or 0
+        
+        # Reading goals (example goals)
+        goals = [
+            {
+                'title': 'Read 10 manga this month',
+                'progress': manga_read_this_month,
+                'target': 10,
+                'description': 'Complete 10 different manga series'
+            },
+            {
+                'title': 'Read for 20 hours this month',
+                'progress': int(total_hours),
+                'target': 20,
+                'description': 'Spend 20 hours reading manga'
+            },
+            {
+                'title': 'Maintain 7-day reading streak',
+                'progress': current_streak,
+                'target': 7,
+                'description': 'Read manga for 7 consecutive days'
+            }
+        ]
+        
+        # Format response data
+        activity_data = [
+            {
+                'manga_title': h.manga_title,
+                'chapter_title': h.chapter_title,
+                'source': h.source,
+                'manga_id': h.manga_id,
+                'chapter_url': h.chapter_url,
+                'read_at': h.read_at.isoformat(),
+                'reading_time': h.reading_time,
+                'pages_read': h.pages_read,
+                'total_pages': h.total_pages,
+                'completion_percentage': h.completion_percentage
+            } for h in recent_activity
+        ]
+        
+        continue_data = [
+            {
+                'manga_id': p.manga_id,
+                'source': p.source,
+                'manga_title': p.manga_title,
+                'current_chapter': p.current_chapter,
+                'current_page': p.current_page,
+                'completion_percentage': p.completion_percentage,
+                'last_read_at': p.last_read_at.isoformat() if p.last_read_at else None
+            } for p in continue_reading
+        ]
+        
+        stats_data = {
+            'total_manga': manga_read_this_month,
+            'total_hours': total_hours,
+            'current_streak': current_streak,
+            'average_rating': float(avg_rating),
+            'goals': goals
+        }
+        
+        response_data = {
+            'recent_activity': activity_data,
+            'continue_reading': continue_data,
+            'reading_stats': stats_data
+        }
+        
+        # Note: Dashboard caching will be implemented later
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        print(f"Dashboard error: {str(e)}")
+        print(f"Traceback: {error_traceback}")
+        return jsonify({'error': f'Failed to fetch dashboard data: {str(e)}', 'traceback': error_traceback}), 500
+
 # --- READING STATISTICS ENDPOINTS ---
 @app.route('/reading-stats', methods=['GET'])
 @auth_manager.login_required

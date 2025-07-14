@@ -17,17 +17,15 @@ import ReadingLists from './components/ReadingLists.jsx';
 import Settings from './components/Settings.jsx';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext.jsx';
 import LandingPage from './components/LandingPage.jsx';
+import LoadingSkeleton from './components/LoadingSkeleton.jsx';
+import LandingSkeleton from './components/LandingSkeleton.jsx';
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (!isAuthenticated) {
@@ -42,11 +40,7 @@ const PublicRoute = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <LandingSkeleton />;
   }
 
   if (isAuthenticated) {
@@ -58,7 +52,13 @@ const PublicRoute = ({ children }) => {
 
 // Main App Content
 const AppContent = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // Show loading skeleton while determining authentication state
+  if (isLoading) {
+    return isAuthenticated ? <LoadingSkeleton /> : <LandingSkeleton />;
+  }
+  
   return (
     <div className="min-h-screen bg-gray-900">
       {isAuthenticated && <Header />}

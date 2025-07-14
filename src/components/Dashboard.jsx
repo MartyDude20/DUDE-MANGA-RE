@@ -33,28 +33,16 @@ const Dashboard = () => {
     try {
       setLoading(true);
       
-      // Fetch recent activity
-      const activityResponse = await authFetch('/api/read-history?limit=5');
+      // Use the new single dashboard endpoint for better performance
+      const response = await authFetch('/api/dashboard?activity_limit=5&continue_limit=3');
       
-      // Fetch continue reading
-      const continueResponse = await authFetch('/api/reading-progress/continue');
-      
-      // Fetch reading statistics
-      const statsResponse = await authFetch('/api/reading-stats');
-
-      if (activityResponse.ok) {
-        const activityData = await activityResponse.json();
-        setRecentActivity(activityData.slice(0, 5));
-      }
-
-      if (continueResponse.ok) {
-        const continueData = await continueResponse.json();
-        setContinueReading(continueData.slice(0, 3));
-      }
-
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setReadingStats(statsData);
+      if (response.ok) {
+        const data = await response.json();
+        setRecentActivity(data.recent_activity || []);
+        setContinueReading(data.continue_reading || []);
+        setReadingStats(data.reading_stats || {});
+      } else {
+        console.error('Failed to fetch dashboard data');
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

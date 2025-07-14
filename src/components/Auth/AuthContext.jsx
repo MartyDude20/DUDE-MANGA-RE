@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
   const verifyToken = async (token) => {
     try {
-      const response = await fetch('/api/me', {
+      const response = await fetch('http://localhost:3006/api/me', {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Call logout endpoint to blacklist tokens
       if (accessToken) {
-        await fetch('/api/logout', {
+        await fetch('http://localhost:3006/api/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
 
   const refreshToken = async () => {
     try {
-      const response = await fetch('/api/refresh', {
+      const response = await fetch('http://localhost:3006/api/refresh', {
         method: 'POST',
         credentials: 'include',
       });
@@ -116,6 +116,9 @@ export const AuthProvider = ({ children }) => {
   const authFetch = async (url, options = {}) => {
     const token = accessToken || localStorage.getItem('accessToken');
     
+    // Ensure URL uses the proxy if it's a relative URL
+    const fullUrl = url.startsWith('http') ? url : `http://localhost:3006${url}`;
+    
     if (token) {
       options.headers = {
         ...options.headers,
@@ -123,7 +126,7 @@ export const AuthProvider = ({ children }) => {
       };
     }
 
-    let response = await fetch(url, {
+    let response = await fetch(fullUrl, {
       ...options,
       credentials: 'include',
     });
@@ -137,7 +140,7 @@ export const AuthProvider = ({ children }) => {
           ...options.headers,
           'Authorization': `Bearer ${newToken}`,
         };
-        response = await fetch(url, {
+        response = await fetch(fullUrl, {
           ...options,
           credentials: 'include',
         });
