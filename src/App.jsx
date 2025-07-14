@@ -14,6 +14,7 @@ import ResetPassword from './components/Auth/ResetPassword.jsx';
 import Profile from './components/Profile.jsx';
 import ReadHistory from './components/ReadHistory.jsx';
 import ReadingLists from './components/ReadingLists.jsx';
+import ReadingListDetails from './components/ReadingListDetails.jsx';
 import Settings from './components/Settings.jsx';
 import { AuthProvider, useAuth } from './components/Auth/AuthContext.jsx';
 import LandingPage from './components/LandingPage.jsx';
@@ -79,6 +80,7 @@ const AppContent = () => {
               <Route path="/saved" element={<SavedManga />} />
               <Route path="/sources" element={<Sources />} />
               <Route path="/reading-lists" element={<ProtectedRoute><ReadingLists /></ProtectedRoute>} />
+              <Route path="/reading-lists/:listId" element={<ProtectedRoute><ReadingListDetails /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/cache" element={<ProtectedRoute><CacheManager /></ProtectedRoute>} />
               <Route path="/manga/:source/:id" element={<MangaDetails />} />

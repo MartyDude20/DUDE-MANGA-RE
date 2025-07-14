@@ -486,6 +486,17 @@ def add_manga_to_list(list_id):
     except requests.RequestException as e:
         return jsonify({'error': f'Failed to add manga to list: {str(e)}'}), 500
 
+@app.route('/api/reading-lists/<int:list_id>', methods=['GET'])
+def get_reading_list_details(list_id):
+    """Get reading list details with manga entries"""
+    try:
+        headers = get_forward_headers()
+        response = requests.get(f"{PLAYWRIGHT_URL}/reading-lists/{list_id}", headers=headers, params=dict(request.args))
+        response.raise_for_status()
+        return jsonify(response.json()), response.status_code
+    except requests.RequestException as e:
+        return jsonify({'error': f'Failed to get reading list details: {str(e)}'}), 500
+
 @app.route('/api/proxy-image', methods=['GET'])
 def proxy_image():
     """Proxy images to avoid CORS issues"""

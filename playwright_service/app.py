@@ -1154,6 +1154,67 @@ def add_manga_to_list(list_id):
     
     return jsonify({'message': 'Manga added to list successfully'})
 
+@app.route('/reading-lists/<int:list_id>', methods=['GET'])
+@auth_manager.login_required
+def get_reading_list_details(list_id):
+    """Get reading list details with manga entries"""
+    user = getattr(request, 'current_user', None)
+    if not user:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    # Verify the list belongs to the user
+    reading_list = ReadingList.query.filter_by(id=list_id, user_id=user.id).first()
+    if not reading_list:
+        return jsonify({'error': 'Reading list not found'}), 404
+    
+    # Get sort parameter
+    sort_by = request.args.get('sort', 'added_at_desc')  # Default: recently added
+    
+    # Build query for manga entries
+    query = ReadingListEntry.query.filter_by(reading_list_id=list_id)
+    
+    # Apply sorting
+    if sort_by == 'title_asc':
+        query = query.order_by(ReadingListEntry.manga_title.asc())
+    elif sort_by == 'title_desc':
+        query = query.order_by(ReadingListEntry.manga_title.desc())
+    elif sort_by == 'added_at_asc':
+        query = query.order_by(ReadingListEntry.added_at.asc())
+    elif sort_by == 'added_at_desc':
+        query = query.order_by(ReadingListEntry.added_at.desc())
+    elif sort_by == 'rating_desc':
+        query = query.order_by(ReadingListEntry.rating.desc().nullslast())
+    else:
+        query = query.order_by(ReadingListEntry.added_at.desc())  # Default
+    
+    manga_entries = query.all()
+    
+    return jsonify({
+        'list': {
+            'id': reading_list.id,
+            'name': reading_list.name,
+            'description': reading_list.description,
+            'is_default': reading_list.is_default,
+            'color': reading_list.color,
+            'created_at': reading_list.created_at,
+            'updated_at': reading_list.updated_at,
+            'manga_count': len(manga_entries)
+        },
+        'manga_entries': [
+            {
+                'id': entry.id,
+                'manga_id': entry.manga_id,
+                'source': entry.source,
+                'manga_title': entry.manga_title,
+                'cover_url': entry.cover_url,
+                'added_at': entry.added_at.isoformat(),
+                'notes': entry.notes,
+                'rating': entry.rating,
+                'tags': entry.tags or []
+            } for entry in manga_entries
+        ]
+    })
+
 if __name__ == '__main__':
     port = int(os.getenv('PLAYWRIGHT_PORT', 5000))
     with app.app_context():
